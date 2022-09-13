@@ -1,0 +1,6 @@
+graft docs
+graft examples
+include scripts/*.py
+
+include Makefile
+include data/MANUAL.txt
