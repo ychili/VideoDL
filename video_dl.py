@@ -32,6 +32,13 @@ __prog__ = "VideoDL"
 __version__ = "0.5.1"
 
 
+class ProgramLogger(logging.LoggerAdapter):
+    """A LoggerAdapter that prepends the section name to the log message"""
+
+    def process(self, msg, kwargs):
+        return "%s: %s" % (self.extra["section"], msg), kwargs
+
+
 class Program:
     """Extract parameters from `section` of `config`.
 
@@ -44,18 +51,19 @@ class Program:
     def __init__(self, config, section):
         self.section = section
         self.map = config[section]
-        self.logger = logging.getLogger(__prog__)
+        self.logger = ProgramLogger(
+            logging.getLogger(__prog__), {"section": section})
         self.error = None
 
     def download(self, url_list, options=None):
         """Download list of URLs."""
+        self.logger.debug("video queue: %s", url_list)
         with yt_dlp.YoutubeDL(options or {}) as ydl:
-            self.logger.info("starting download of %s", self.section)
+            self.logger.info("starting download")
             self.logger.debug(ydl.params)
             error_code = ydl.download(url_list)
         if error_code:
-            self.logger.error("some videos in [%s] failed to download",
-                              self.section)
+            self.logger.error("some videos failed to download")
 
     def path_is_writable(self, key):
         """For value of config key, test if value is writable path.
@@ -154,8 +162,7 @@ class Program:
         try:
             return self.map[key]
         except KeyError:
-            self.logger.exception("required key %r not found in section [%s]",
-                                  key, self.section)
+            self.logger.exception("required key %r not found in section", key)
             return None
 
     def progress_hook(self, progress_info):
@@ -187,9 +194,8 @@ class Program:
                 return 0.0
         a, b = parsed[-2:]
         interval = random.uniform(a, b)
-        self.logger.info(
-            "sleeping for %s before starting [%s]",
-            format_duration(interval), self.section)
+        self.logger.info("sleeping for %s before starting",
+                         format_duration(interval))
         time.sleep(interval)
         return interval
 
@@ -261,7 +267,7 @@ def main():
         clock_start += prog.random_sleep()
         prog.download(url_list, ydl_opts)
     clock_stop = time.perf_counter()
-    logger.info("finished all programs in %s",
+    logger.info("finished all jobs in %s",
                 format_duration(clock_stop - clock_start))
     return 0
 
