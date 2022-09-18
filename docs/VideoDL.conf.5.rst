@@ -85,7 +85,7 @@ EXAMPLE
    DateStart = ${DateSpan}
 
 The above example file contains two jobs in two sections
-with *job-identifier*s 'Archivist' and 'Recent'.
+with *job-identifier*\ s 'Archivist' and 'Recent'.
 Those two sections inherit all values from the special 'DEFAULT' section
 (they can override inherited values if needed, but that is not shown in
 this example).
