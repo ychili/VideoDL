@@ -180,8 +180,8 @@ class Program:
                 progress_info.get("downloaded_bytes"),
                 progress_info.get("elapsed"))
 
-    def random_sleep(self):
-        value = self.map.get("SleepInterval")
+    def random_sleep(self, key="SleepInterval"):
+        value = self.map.get(key)
         if not value:
             return 0.0
         parsed = [0.0]
@@ -227,6 +227,7 @@ def main():
                         console_level=args.log_level,
                         file_level=parse_log_level(master_log_level))
     logger.debug("config file(s): %s", config.get("DEFAULT", "PATHS"))
+    logger.debug("%s version %s", __prog__, __version__)
 
     if args.sleep:
         interval = random.uniform(0.0, args.sleep)
