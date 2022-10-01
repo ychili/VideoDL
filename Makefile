@@ -32,7 +32,7 @@ $(DATADIR)/version.yaml: video_dl.py | $(DATADIR)
 	./scripts/get_version.py video_dl.py > $(DATADIR)/version.yaml
 
 $(DATADIR)/date.yaml: $(DOC_SRC) | $(DATADIR)
-	./scripts/get_mtime.py $? > $(DATADIR)/date.yaml
+	./scripts/get_mtime.py $(DOC_SRC) > $(DATADIR)/date.yaml
 
 # Cross-platform, readable summary of the above
 $(DATADIR)/MANUAL.txt: $(DOCSDIR)/Manual.rst $(METADATA) | $(DATADIR)
