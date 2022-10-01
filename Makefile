@@ -11,7 +11,7 @@ PANDOC_METADATA_OPTS = $(addprefix --metadata-file=, $(METADATA))
 docs: $(DATADIR)/MANUAL.txt $(DATADIR)/video-dl.1.gz $(DATADIR)/VideoDL.conf.5.gz
 
 clean:
-	rm $(DATADIR)/*
+	rm -rf $(DATADIR)
 
 %.gz: %
 	gzip -9 -c $< > $@
@@ -28,10 +28,10 @@ $(DATADIR)/VideoDL.conf.5: $(DOCSDIR)/VideoDL.conf.5.rst $(METADATA) $(DOCSDIR)/
 		--metadata-file=$(DOCSDIR)/VideoDL.conf.5.yaml \
 		$(DOCSDIR)/VideoDL.conf.5.rst -o $(DATADIR)/VideoDL.conf.5
 
-$(DATADIR)/version.yaml: video_dl.py
+$(DATADIR)/version.yaml: video_dl.py | $(DATADIR)
 	./scripts/get_version.py video_dl.py > $(DATADIR)/version.yaml
 
-$(DATADIR)/date.yaml: $(DOC_SRC)
+$(DATADIR)/date.yaml: $(DOC_SRC) | $(DATADIR)
 	./scripts/get_mtime.py $? > $(DATADIR)/date.yaml
 
 # Cross-platform, readable summary of the above
@@ -40,4 +40,4 @@ $(DATADIR)/MANUAL.txt: $(DOCSDIR)/Manual.rst $(METADATA) | $(DATADIR)
 		$(METADATA) $(DOCSDIR)/Manual.rst -o $(DATADIR)/MANUAL.txt
 
 $(DATADIR):
-	mkdir $(DATADIR)
+	mkdir -p $(DATADIR)
