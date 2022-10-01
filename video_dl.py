@@ -68,6 +68,8 @@ class Program:
     def path_is_writable(self, key):
         """For value of config key, test if value is writable path.
 
+        Note this is a convenience not a security feature.
+
         Returns: path value if writable; False if not writable; None if key
           not found
         """
@@ -181,6 +183,15 @@ class Program:
                 progress_info.get("elapsed"))
 
     def random_sleep(self, key="SleepInterval"):
+        """
+        Parse value of config key, and sleep for a random duration in that
+        interval.
+
+        The value should consist of either one argument or two comma-separated
+        arguments. Arguments should be parsable by `duration`. If one argument,
+        the interval is [0, arg]. Otherwise it is bounded by the two arguments.
+
+        Returns: number of seconds slept for"""
         value = self.map.get(key)
         if not value:
             return 0.0
@@ -388,6 +399,7 @@ def parse_cla():
 
 
 def duration(seconds):
+    """Convert a string representing a decimal, positive, real number."""
     dur = float(seconds)
     if 0.0 <= dur <= threading.TIMEOUT_MAX:
         return dur
