@@ -191,20 +191,19 @@ class Program:
         arguments. Arguments should be parsable by `duration`. If one argument,
         the interval is [0, arg]. Otherwise it is bounded by the two arguments.
 
-        Returns: number of seconds slept for"""
+        Returns: number of seconds slept for
+        """
         value = self.map.get(key)
         if not value:
             return 0.0
-        parsed = [0.0]
-        for arg in value.split(',')[:2]:
-            try:
-                parsed.append(duration(arg))
-            except ValueError:
-                self.logger.warning(
-                    "invalid argument to SleepInterval: %s", arg)
-                return 0.0
-        a, b = parsed[-2:]
-        interval = random.uniform(a, b)
+        try:
+            argv = iter([duration(arg) for arg in value.split(',')])
+        except ValueError:
+            self.logger.warning("invalid argument to %s: %s", key, value)
+            return 0.0
+        upper = next(argv, 0.0)
+        lower = next(argv, 0.0)
+        interval = random.uniform(lower, upper)
         self.logger.info("sleeping for %s before starting",
                          format_duration(interval))
         time.sleep(interval)
