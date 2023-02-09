@@ -182,16 +182,17 @@ class Program:
                 progress_info.get("downloaded_bytes"),
                 progress_info.get("elapsed"))
 
-    def random_sleep(self, key="SleepInterval"):
+    def parse_interval_random(self, key):
         """
-        Parse value of config key, and sleep for a random duration in that
-        interval.
+        Parse value of config key as an interval, and return a random number
+        in that interval.
 
         The value should consist of either one argument or two comma-separated
         arguments. Arguments should be parsable by `duration`. If one argument,
-        the interval is [0, arg]. Otherwise it is bounded by the two arguments.
+        the interval is [0, arg]. Otherwise the result is bounded by the two
+        arguments.
 
-        Returns: number of seconds slept for
+        If the value is missing or cannot be parsed, return 0.0.
         """
         value = self.map.get(key)
         if not value:
@@ -203,7 +204,18 @@ class Program:
             return 0.0
         upper = next(argv, 0.0)
         lower = next(argv, 0.0)
-        interval = random.uniform(lower, upper)
+        return random.uniform(lower, upper)
+
+    def random_sleep(self, key="SleepInterval"):
+        """
+        Parse value of config key, and sleep for a random duration in that
+        interval (as parsed by `parse_interval_random`).
+
+        Returns: number of seconds slept for
+        """
+        interval = self.parse_interval_random(key)
+        if interval <= 0.0:
+            return 0.0
         self.logger.info("sleeping for %s before starting",
                          format_duration(interval))
         time.sleep(interval)
