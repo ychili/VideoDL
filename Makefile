@@ -41,3 +41,7 @@ $(DATADIR)/MANUAL.txt: $(DOCSDIR)/Manual.rst $(METADATA) | $(DATADIR)
 
 $(DATADIR):
 	mkdir -p $(DATADIR)
+
+test:
+	python3 -m doctest video_dl.py
+	python3 -m unittest tests/test*.py
