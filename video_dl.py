@@ -223,7 +223,11 @@ class Program:
 
 
 class MyDateRange(yt_dlp.utils.DateRange):
-    """Represents a time interval between two dates"""
+    """Represents a time interval between two dates
+
+    >>> MyDateRange(start="20050403")
+    MyDateRange(start='20050403', end='99991231')
+    """
 
     def __repr__(self):
         # Turn self.start and self.end back into canonical string format
