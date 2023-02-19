@@ -1,3 +1,5 @@
+PYTHON ?= python3
+
 PANDOC_MAN_OPTS = --metadata=pandoc-version:false --metadata=hyphenate:true
 
 # Doc sources in DOCSDIR -> doc output in DATADIR
@@ -43,5 +45,5 @@ $(DATADIR):
 	mkdir -p $(DATADIR)
 
 test:
-	python3 -m doctest video_dl.py
-	python3 -m unittest tests/test*.py
+	$(PYTHON) -m doctest video_dl.py
+	$(PYTHON) -m unittest tests/test*.py
