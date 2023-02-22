@@ -95,6 +95,7 @@ class Program:
             self.logger.exception("can't read source file %s", s_path)
             return None
         else:
+            self.logger.debug("reading batch urls from '%s'", s_path)
             # s_file will be closed by function
             return yt_dlp.utils.read_batch_urls(s_file)
 
@@ -269,10 +270,12 @@ def main():
         prog = Program(config=config, section=job)
         subdir = prog.path_is_writable(key="SubDir")
         if not subdir:
-            logger.warning("unable to write to directory, skipping %s", job)
+            logger.warning("path is not writable: %s, skipping %s",
+                           subdir, job)
             continue
         if not os.path.isdir(subdir):
-            logger.warning("%r is not a directory, skipping %s", subdir, job)
+            logger.warning("path is not a directory: %s, skipping %s",
+                           subdir, job)
             continue
         url_list = prog.read_source()
         if url_list is None:
