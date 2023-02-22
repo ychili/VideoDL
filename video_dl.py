@@ -146,9 +146,16 @@ class Program:
             file_hdlr = logging.FileHandler(
                 log_path, mode=self.parse_log_mode())
             file_hdlr.setLevel(logging.DEBUG)
-            file_hdlr.setFormatter(logging.Formatter(self.file_fmt))
+            file_hdlr.setFormatter(self.get_output_logger_formatter())
             logger.addHandler(file_hdlr)
         return logger
+
+    def get_output_logger_formatter(self,
+                                    fmt_key="LogFmt",
+                                    datefmt_key="LogDateFmt"):
+        fmt = self.map.get(fmt_key, self.file_fmt)
+        datefmt = self.map.get(datefmt_key)
+        return logging.Formatter(fmt=fmt, datefmt=datefmt)
 
     def parse_log_mode(self, key="LogMode"):
         log_mode = self.map.get(key, "").lower()
@@ -248,11 +255,8 @@ def main():
         logger = get_logger()
         logger.error("unable to find configuration file")
         return 100
-    master_log = config.get("DEFAULT", "MasterLog", fallback=None)
-    master_log_level = config.get("DEFAULT", "MasterLogLevel", fallback="")
-    logger = get_logger(file=master_log,
-                        console_level=args.log_level,
-                        file_level=parse_log_level(master_log_level))
+    logger = get_logger(**get_logger_options(config),
+                        console_level=args.log_level)
     logger.debug("config file(s): %s", config.get("DEFAULT", "PATHS"))
     logger.debug("%s version %s", __prog__, __version__)
 
@@ -300,6 +304,17 @@ def main():
     logger.info("finished all jobs in %s",
                 format_duration(clock_stop - clock_start))
     return 0
+
+
+def get_logger_options(config):
+    opts = {}
+    opts["file"] = config.get("DEFAULT", "MasterLog", fallback=None)
+    opts["file_level"] = parse_log_level(config.get(
+        "DEFAULT", "MasterLogLevel", fallback=""))
+    opts["file_fmt"] = config.get("DEFAULT", "MasterLogFmt", fallback=None)
+    opts["file_datefmt"] = config.get(
+        "DEFAULT", "MasterLogDateFmt", fallback=None)
+    return opts
 
 
 def search_configs(config_path=None):
@@ -357,7 +372,9 @@ def search_nearby_files(basename=None):
 
 def get_logger(file=None,
                console_level=logging.INFO,
-               file_level=logging.DEBUG):
+               file_level=logging.DEBUG,
+               file_fmt=None,
+               file_datefmt=None):
     """Configure and return module logger."""
     logger = logging.getLogger(__prog__)
     logger.setLevel(logging.DEBUG)
@@ -369,9 +386,11 @@ def get_logger(file=None,
         file_hdlr = logging.FileHandler(file)
         file_hdlr.setLevel(file_level)
         legacy_fmt = "%(asctime)s *** %(levelname)s %(message)s"
+        fmt = file_fmt if file_fmt is not None else legacy_fmt
         iso_8601_sec = "%Y-%m-%dT%H:%M:%S%z"
+        datefmt = file_datefmt if file_datefmt is not None else iso_8601_sec
         file_hdlr.setFormatter(
-            logging.Formatter(fmt=legacy_fmt, datefmt=iso_8601_sec))
+            logging.Formatter(fmt=fmt, datefmt=datefmt))
         logger.addHandler(file_hdlr)
     return logger
 
