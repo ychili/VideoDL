@@ -31,6 +31,16 @@ Optional keys
    'DEBUG' or a numeric level. Defaults to DEBUG. Must be in DEFAULT
    section of config.
 
+**MasterLogFmt =** *fmt*
+   The log format for **MasterLog**. See section on "Log formatting".
+   The default *fmt* is ``%(asctime)s *** %(levelname)s %(message)s``.
+
+**MasterLogDateFmt =** *datefmt*
+   The date format for **MasterLog**. This is the format that the
+   ``asctime`` attribute uses. The default *datefmt* is
+   '%Y-%m-%dT%H:%M:%S%z', the same format as GNU
+   ``date --iso-8601=seconds`` (example: 2006-08-14T02:34:56-06:00).
+
 **Log =** *file*
    Write downloader messages to *file.* This log file was originally
    separated from **MasterLog** so that downloader messages could be
@@ -43,6 +53,16 @@ Optional keys
    Default behavior is to overwrite the downloader output log each time
    it is opened ('overwrite' or 'truncate'). Set this to 'append' to
    append to the existing log file instead.
+
+**LogFmt =** *fmt*
+   The log format for **Log**. See section on "Log formatting". The
+   default *fmt* is ``%(asctime)s %(levelno)s %(message)s``.
+
+**LogDateFmt =** *datefmt*
+   The date format for **Log**. This is the format that the ``asctime``
+   attribute uses. The default *datefmt* is '%Y-%m-%d %H:%M:%S,uuu', the
+   default format used by Python’s ``logging.Formatter.formatTime``
+   (example: 2003-01-23 00:29:50,411).
 
 **DownloadArchive =** *file*
    YTDL will record all the video IDs that it’s already downloaded
@@ -67,3 +87,20 @@ Optional keys
    arguments separated by a comma. If one argument, delay by a maximum
    of *maximum* seconds. If two arguments, delay by an amount between
    *maximum* and *minimum* seconds.
+
+Log formatting
+--------------
+
+The **MasterLogFmt** and **LogFmt** optional keys allow the output
+format of log messages to be customized from the default. The *fmt*
+string should contain log record attributes embedded as standard Python
+%-style mapping keys. Consult the Python documentation’s `LogRecord
+attributes <https://docs.python.org/3/library/logging.html#logrecord-attributes>`__
+section for a list of available attributes.
+
+The **MasterLogDateFmt** and **LogDateFmt** optional keys allow the
+format of dates and times in log messages to be customized from the
+default. The syntax of the *datefmt* string is described in the docs for
+`formatTime <https://docs.python.org/3/library/logging.html#logging.Formatter.formatTime>`__.
+In short, the formatting directives follow those of the ANSI C standard
+(reference **strftime**\ (3)) plus 'uuu' for a millisecond value.
