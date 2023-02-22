@@ -100,7 +100,5 @@ section for a list of available attributes.
 
 The **MasterLogDateFmt** and **LogDateFmt** optional keys allow the
 format of dates and times in log messages to be customized from the
-default. The syntax of the *datefmt* string is described in the docs for
-`formatTime <https://docs.python.org/3/library/logging.html#logging.Formatter.formatTime>`__.
-In short, the formatting directives follow those of the ANSI C standard
-(reference **strftime**\ (3)) plus 'uuu' for a millisecond value.
+default. Reference **strftime**\ (3) for formatting directives that can
+be used in the *datefmt* string.
