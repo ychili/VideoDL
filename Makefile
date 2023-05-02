@@ -31,10 +31,10 @@ $(DATADIR)/VideoDL.conf.5: $(DOCSDIR)/VideoDL.conf.5.rst $(METADATA) $(DOCSDIR)/
 		$(DOCSDIR)/VideoDL.conf.5.rst -o $(DATADIR)/VideoDL.conf.5
 
 $(DATADIR)/version.yaml: video_dl.py | $(DATADIR)
-	./scripts/get_version.py video_dl.py > $(DATADIR)/version.yaml
+	$(PYTHON) scripts/get_version.py video_dl.py > $(DATADIR)/version.yaml
 
 $(DATADIR)/date.yaml: $(DOC_SRC) | $(DATADIR)
-	./scripts/get_mtime.py $(DOC_SRC) > $(DATADIR)/date.yaml
+	$(PYTHON) scripts/get_mtime.py $(DOC_SRC) > $(DATADIR)/date.yaml
 
 # Cross-platform, readable summary of the above
 $(DATADIR)/MANUAL.txt: $(DOCSDIR)/Manual.rst $(METADATA) | $(DATADIR)
