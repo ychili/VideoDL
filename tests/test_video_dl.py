@@ -1,4 +1,5 @@
 import datetime
+import logging
 import unittest
 
 import video_dl
@@ -80,6 +81,17 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(video_dl.duration("3600"), 3600)
         self.assertRaises(ValueError, video_dl.duration, "-1")
         self.assertRaises(ValueError, video_dl.duration, "inf")
+
+    def test_promote_info_logs(self):
+        logging.basicConfig(level=logging.DEBUG)
+        logger = logging.getLogger()
+        logger.debug = video_dl.promote_info_logs(logger.debug)
+        with self.assertLogs(level=logging.INFO):
+            logger.debug("[info] Promoted to info")
+        with self.assertLogs(level=logging.DEBUG):
+            logger.debug("[debug] Matches and remains at debug")
+        with self.assertLogs(level=logging.WARNING):
+            logger.warning("[warning] Warnings not affected")
 
 
 class TestMyDateRange(unittest.TestCase):

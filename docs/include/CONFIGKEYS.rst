@@ -64,6 +64,14 @@ Optional keys
    default format used by Python’s ``logging.Formatter.formatTime``
    (example: 2003-01-23 00:29:50,411).
 
+**DistinguishDebug =** *boolean*
+   If set, log downloader messages at the level INFO
+   unless they are specifically prefixed by '[debug]'.
+   For compatibility reasons,
+   YTDL logs most info messages at the level DEBUG.
+   Set this option to 'on' or 'true' to distinguish real debug logs
+   from other status messages.
+
 **DownloadArchive =** *file*
    YTDL will record all the video IDs that it’s already downloaded
    to *file.*
