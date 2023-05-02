@@ -6,7 +6,7 @@ video-dl - video download manager for yt-dlp
 SYNOPSIS
 ========
 
-.. include:: docs/include/SYNOPSIS.rst
+.. include:: include/SYNOPSIS.rst
 
 DESCRIPTION
 ===========
@@ -26,7 +26,7 @@ next tried.
 OPTIONS
 =======
 
-.. include:: docs/include/OPTIONS.rst
+.. include:: include/OPTIONS.rst
 
 EXIT STATUS
 ===========

@@ -38,7 +38,7 @@ named ``VideoDL.conf``.
 Command-line arguments
 ----------------------
 
-.. include:: docs/include/SYNOPSIS.rst
+.. include:: include/SYNOPSIS.rst
 
 Will perform the download job specified in the *job-identifier* section of
 the loaded configuration.
@@ -49,7 +49,7 @@ will be skipped and the next tried.
 Optional arguments
 ^^^^^^^^^^^^^^^^^^
 
-.. include:: docs/include/OPTIONS.rst
+.. include:: include/OPTIONS.rst
 
 CONFIG FORMAT
 =============
@@ -58,4 +58,4 @@ See ``examples/VideoDL.conf`` for an example configuration file,
 and see ``examples/options.json`` for an example options file
 (**OptionsFile**, below).
 
-.. include:: docs/include/CONFIGKEYS.rst
+.. include:: include/CONFIGKEYS.rst

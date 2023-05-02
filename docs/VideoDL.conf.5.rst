@@ -32,7 +32,7 @@ Unrecognized keys will be ignored.
 All sections will inherit values from the section named 'DEFAULT', if
 it exists.
 
-.. include:: docs/include/CONFIGKEYS.rst
+.. include:: include/CONFIGKEYS.rst
 
 FILES
 =====
