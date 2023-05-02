@@ -36,7 +36,7 @@ class ProgramLogger(logging.LoggerAdapter):
     """A LoggerAdapter that prepends the section name to the log message"""
 
     def process(self, msg, kwargs):
-        return "%s: %s" % (self.extra["section"], msg), kwargs
+        return f"{self.extra['section']}: {msg}", kwargs
 
 
 class Program:
