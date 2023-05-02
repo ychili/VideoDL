@@ -94,9 +94,8 @@ class Program:
         except OSError:
             self.logger.exception("can't read source file %s", s_path)
             return None
-        else:
+        with s_file:
             self.logger.debug("reading batch urls from '%s'", s_path)
-            # s_file will be closed by function
             return yt_dlp.utils.read_batch_urls(s_file)
 
     def read_options(self, options="OptionsFile"):
