@@ -306,6 +306,19 @@ def main():
     return 0
 
 
+def promote_info_logs(std_debug):
+    """
+    Return a logging.Logger.debug method that distinguishes debug by the msg
+    prefix '[debug] '.
+    """
+    @functools.wraps(std_debug)
+    def wrapper(msg, *args, **kwargs):
+        if msg.startswith("[debug] "):
+            return std_debug(msg, *args, **kwargs)
+        return std_debug.__self__.info(msg, *args, **kwargs)
+    return wrapper
+
+
 def get_logger_options(config):
     opts = {}
     opts["file"] = config.get("DEFAULT", "MasterLog", fallback=None)
