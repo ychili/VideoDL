@@ -138,6 +138,8 @@ class Program:
         # Not to be confused with self.logger which is the module logger
         logger = logging.getLogger(name=self.section)
         logger.setLevel(logging.DEBUG)
+        if self.distinguish_debug():
+            logger.debug = promote_info_logs(logger.debug)
         console_hdlr = logging.StreamHandler()
         console_hdlr.setLevel(console_level)
         console_hdlr.setFormatter(logging.Formatter(self.console_fmt))
@@ -149,6 +151,15 @@ class Program:
             file_hdlr.setFormatter(self.get_output_logger_formatter())
             logger.addHandler(file_hdlr)
         return logger
+
+    def distinguish_debug(self, key="DistinguishDebug"):
+        try:
+            return self.map.getboolean(key, False)
+        except ValueError:
+            self.logger.warning(
+                "unrecognized DistinguishDebug %r, defaulting to No",
+                self.map.get(key))
+        return False
 
     def get_output_logger_formatter(self,
                                     fmt_key="LogFmt",
