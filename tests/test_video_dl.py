@@ -67,6 +67,27 @@ class TestProgram(unittest.TestCase):
             mode = self.prog.parse_log_mode(key)
         self.assertEqual(mode, default)
 
+    def test_get_boolean(self):
+        key = "TestBoolean"
+        default = False
+        # Missing key
+        self.assertEqual(self.prog.get_boolean(key, default), default)
+        true_values = ("1", "on", "True", "yes")
+        false_values = ("0", "off", "False", "no")
+        for values, expected in (true_values, True), (false_values, False):
+            for value in values:
+                self.prog.map[key] = value
+                self.assertEqual(self.prog.get_boolean(key, default), expected)
+        invalid_values = ("2", "set", "unset")
+        for value in invalid_values:
+            self.prog.map[key] = value
+            with self.assertLogs(level=logging.WARNING) as recording:
+                self.assertEqual(self.prog.get_boolean(key, default), default)
+            # Test that log message contains relevant info
+            test = (value in msg and str(default) in msg and key in msg
+                    for msg in recording.output)
+            self.assertTrue(any(test))
+
 
 class TestFunctions(unittest.TestCase):
     def test_parse_log_level(self):
