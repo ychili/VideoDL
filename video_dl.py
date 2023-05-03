@@ -152,13 +152,7 @@ class Program:
         return logger
 
     def distinguish_debug(self, key="DistinguishDebug"):
-        try:
-            return self.map.getboolean(key, False)
-        except ValueError:
-            self.logger.warning(
-                "unrecognized DistinguishDebug %r, defaulting to No",
-                self.map.get(key))
-        return False
+        return self.get_boolean(key, False)
 
     def get_output_logger_formatter(self,
                                     fmt_key="LogFmt",
@@ -184,6 +178,15 @@ class Program:
         except KeyError:
             self.logger.exception("required key %r not found in section", key)
             return None
+
+    def get_boolean(self, key, default=False):
+        try:
+            return self.map.getboolean(key, default)
+        except ValueError:
+            self.logger.warning(
+                "unrecognized boolean value for %s: '%s' (defaulting to %s)",
+                key, self.map.get(key), default)
+        return default
 
     def progress_hook(self, progress_info):
         if progress_info["status"] == "error":
