@@ -96,6 +96,9 @@ Optional keys
    of *maximum* seconds. If two arguments, delay by an amount between
    *maximum* and *minimum* seconds.
 
+**ShuffleSource =** *boolean*
+   If set, download URLs from **Source** in a random order.
+
 Log formatting
 --------------
 
