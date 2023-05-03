@@ -1,3 +1,4 @@
+import configparser
 import datetime
 import logging
 import unittest
@@ -7,9 +8,11 @@ import video_dl
 
 class TestProgram(unittest.TestCase):
     def setUp(self):
+        config = configparser.ConfigParser(
+            interpolation=configparser.ExtendedInterpolation())
         self.test_section = "SectionName"
-        self.prog = video_dl.Program({self.test_section: {}},
-                                     self.test_section)
+        config.read_dict({self.test_section: {}})
+        self.prog = video_dl.Program(config, self.test_section)
 
     def _assert_interval(self, n, lower, upper):
         self.assertGreaterEqual(n, lower)
