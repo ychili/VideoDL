@@ -98,6 +98,11 @@ class Program:
             self.logger.debug("reading batch urls from '%s'", s_path)
             return yt_dlp.utils.read_batch_urls(s_file)
 
+    def shuffle_source(self, url_list, key="ShuffleSource"):
+        if self.get_boolean(key):
+            self.logger.debug("shuffling video queue")
+            random.shuffle(url_list)
+
     def read_options(self, options="OptionsFile"):
         """For value of config key `options`, read options from JSON or YAML.
 
@@ -298,6 +303,7 @@ def main():
         if url_list is None:
             logger.warning("unable to read source file, skipping %s", job)
             continue
+        prog.shuffle_source(url_list)
         ydl_opts = prog.read_options()
         if ydl_opts is None:
             logger.warning("unable to read options file, skipping %s", job)
