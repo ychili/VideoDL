@@ -17,7 +17,9 @@
 **-d**, **--debug**
    Print debug information.
    Most of the usual messages emitted by the YTDL downloader count as
-   debug messages.
+   debug messages,
+   unless the **DistinguishDebug** configuration option is set,
+   whereupon most will be counted as info messages.
 
 **-q**, **--quiet**
    Don’t print info messages.
