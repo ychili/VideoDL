@@ -199,7 +199,8 @@ class Program:
             self.logger.debug(progress_info["info_dict"])
             self.error = True
         if progress_info["status"] == "finished":
-            self.logger.info("Done downloading, now converting")
+            self.logger.info("Done downloading, now converting: %s",
+                progress_info["info_dict"].get("title", "<no title>"))
             self.logger.debug(
                 "final filename: '%s', tmpfilename: '%s', "
                 "downloaded_bytes: %d, seconds elapsed: %d",
