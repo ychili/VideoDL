@@ -120,6 +120,7 @@ class Program:
             if YAML_ERROR:
                 self.logger.warning(
                     "YAML file %s given, but PyYAML is not installed", o_path)
+                # Try parsing as JSON anyway
             else:
                 load = functools.partial(yaml.load, Loader=yaml.Loader)
         try:
@@ -128,7 +129,12 @@ class Program:
             self.logger.exception("can't read options file %s", o_path)
             return None
         with o_file:
-            return load(o_file)
+            try:
+                return load(o_file)
+            except (json.JSONDecodeError, yaml.YAMLError):
+                self.logger.exception("unable to parse options file %s",
+                                      o_path)
+                return None
 
     def get_date_range(self, start="DateStart", end="DateEnd"):
         """For values of config keys, convert to single DateRange object."""
