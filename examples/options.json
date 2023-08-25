@@ -27,5 +27,9 @@
             "already_have_subtitle": true
         }
     ],
-    "outtmpl": "%(title)s - %(uploader)s - %(upload_date)s/%(title)s - %(uploader)s - %(upload_date)s [%(id)s].%(ext)s"
+    "outtmpl": "%(title)s - %(uploader)s - %(upload_date)s/%(title)s - %(uploader)s - %(upload_date)s [%(id)s].%(ext)s",
+    "VideoDL://options": [
+        "--parse-metadata=%(title)s:%(meta_title)s",
+        "--parse-metadata=%(uploader)s:%(meta_artist)s"
+    ]
 }

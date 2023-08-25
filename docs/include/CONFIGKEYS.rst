@@ -24,6 +24,11 @@ Optional keys
    repo for help translating command-line options to an options
    dictionary.
 
+   If a key named "VideoDL://options" is present, its value will be
+   parsed as an argument array of command-line options.
+   The parsed options will be added to the options dictionary, though
+   they will not override keys specified manually.
+
 **MasterLog =** *file*
    Write log messages produced by **video-dl**\ (1) to *file*. Must be
    in DEFAULT section of config. This is where, for example, the message
