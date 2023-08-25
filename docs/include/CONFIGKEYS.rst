@@ -20,6 +20,9 @@ Optional keys
    passed to the ``yt_dlp.YoutubeDL`` class constructor. Consult the
    documentation for the ``yt_dlp.YoutubeDL`` class constructor for a
    full description of available options.
+   Also, use the script ``devscripts/cli_to_api.py`` from the yt-dlp
+   repo for help translating command-line options to an options
+   dictionary.
 
 **MasterLog =** *file*
    Write log messages produced by **video-dl**\ (1) to *file*. Must be
