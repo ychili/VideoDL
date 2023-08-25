@@ -4,6 +4,7 @@
 
 
 import argparse
+import collections
 import configparser
 import fnmatch
 import functools
@@ -16,6 +17,7 @@ import threading
 import time
 
 import yt_dlp
+from yt_dlp import optparse
 
 try:
     import yaml
@@ -103,7 +105,7 @@ class Program:
             self.logger.debug("shuffling video queue")
             random.shuffle(url_list)
 
-    def read_options(self, options="OptionsFile"):
+    def read_options(self, options="OptionsFile", interpret=False):
         """For value of config key `options`, read options from JSON or YAML.
 
         Returns: dictionary of options from JSON (or YAML) file or empty
@@ -130,11 +132,39 @@ class Program:
             return None
         with o_file:
             try:
-                return load(o_file)
+                options = load(o_file)
             except (json.JSONDecodeError, yaml.YAMLError):
                 self.logger.exception("unable to parse options file %s",
                                       o_path)
                 return None
+        if interpret:
+            try:
+                return self.interpret_options(options)
+            except optparse.OptParseError:
+                self.logger.exception("error parsing options array")
+                return None
+        return options
+
+    def interpret_options(self, options):
+        """Parse argument vector in `options` as command-line options.
+
+        Interpret value of ``VideoDL://options`` as an array of command-line
+        options. Postprocessors are appended to the existing list of
+        postprocessors. All other keys are merged in a ChainMap.
+        """
+        opt_key = "VideoDL://options"
+        if array := options.get(opt_key):
+            if not isinstance(array, list):
+                self.logger.warning("found key %s, but value is not an array",
+                                    opt_key)
+                return options
+            parsed = cli_to_api(array)
+            self.logger.debug("parsed options %s", parsed)
+            if "postprocessors" in parsed:
+                options.setdefault("postprocessors", [])
+                options["postprocessors"].extend(parsed["postprocessors"])
+            return collections.ChainMap(options, parsed)
+        return options
 
     def get_date_range(self, start="DateStart", end="DateEnd"):
         """For values of config keys, convert to single DateRange object."""
@@ -311,7 +341,7 @@ def main():
             logger.warning("unable to read source file, skipping %s", job)
             continue
         prog.shuffle_source(url_list)
-        ydl_opts = prog.read_options()
+        ydl_opts = prog.read_options(interpret=True)
         if ydl_opts is None:
             logger.warning("unable to read options file, skipping %s", job)
             continue
@@ -330,6 +360,28 @@ def main():
     logger.info("finished all jobs in %s",
                 format_duration(clock_stop - clock_start))
     return 0
+
+
+def cli_to_api(opts):
+    """Return a dictionary of options parsed from `opts`.
+
+    Only options with values different from the defaults will be included.
+
+    >>> cli_to_api([])
+    {}
+    >>> cli_to_api(["--concurrent-fragments=2"])
+    {'concurrent_fragment_downloads': 2}
+    """
+    def parse_options(opts):
+        return yt_dlp.parse_options(opts).ydl_opts
+    default_opts = parse_options([])
+    opts = parse_options(opts)
+    diff = {key: val for key, val in opts.items()
+            if default_opts[key] != val}
+    if "postprocessors" in diff:
+        diff["postprocessors"] = [pp for pp in diff["postprocessors"]
+                                  if pp not in default_opts["postprocessors"]]
+    return diff
 
 
 def promote_info_logs(std_debug):

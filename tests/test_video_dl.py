@@ -1,3 +1,4 @@
+import collections
 import configparser
 import datetime
 import logging
@@ -87,6 +88,21 @@ class TestProgram(unittest.TestCase):
             test = (value in msg and str(default) in msg and key in msg
                     for msg in recording.output)
             self.assertTrue(any(test))
+
+    def test_interpret_options(self):
+        opt_key = "VideoDL://options"
+        options = {"key": "value",
+                   opt_key: ["--quiet", "-R", "8"]}
+        with self.assertLogs(level=logging.DEBUG):
+            options = self.prog.interpret_options(options)
+        # But don't assume we know what values our args will be parsed into
+        self.assertIsInstance(options, collections.ChainMap)
+        # Original argv is unmodified
+        self.assertListEqual(options[opt_key],
+                             ["--quiet", "-R", "8"])
+        options[opt_key].append("--bad-option")
+        with self.assertRaises(video_dl.yt_dlp.optparse.OptParseError):
+            options = self.prog.interpret_options(options)
 
 
 class TestFunctions(unittest.TestCase):
