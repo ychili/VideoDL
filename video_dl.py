@@ -329,6 +329,7 @@ def main():
         prog = Program(config=config, section=job)
         subdir = prog.path_is_writable(key="SubDir")
         if not subdir:
+            subdir = prog.get_required("SubDir")
             logger.warning("path is not writable: %s, skipping %s",
                            subdir, job)
             continue
