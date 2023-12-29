@@ -518,7 +518,7 @@ def init_logging(console_level: int = logging.INFO) -> None:
 
 def setup_file_logging(config: configparser.ConfigParser) -> None:
     """Add file logging to the module logger."""
-    settings = config.defaults()
+    settings = config[config.default_section]
     logger = logging.getLogger(PROG)
     if file := settings.get("MasterLog"):
         try:
