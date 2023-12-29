@@ -14,7 +14,7 @@ def get_version(reader):
 
 
 def main():
-    with open(sys.argv[1]) as file:
+    with open(sys.argv[1], encoding="utf-8") as file:
         ver = get_version(file)
     print(f"footer: VideoDL {ver}")
 
