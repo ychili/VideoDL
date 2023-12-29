@@ -396,8 +396,8 @@ def parse_config(
         ydl_opts["download_archive"] = prog.map.get("DownloadArchive")
         ydl_opts["logger"] = prog.get_output_logger(console_level=console_level)
         ydl_opts["daterange"] = prog.get_date_range()
-        ydl_opts["outtmpl"] = subdir / ydl_opts.get(
-            "outtmpl", yt_dlp.utils.DEFAULT_OUTTMPL["default"]
+        ydl_opts["outtmpl"] = str(
+            subdir / ydl_opts.get("outtmpl", yt_dlp.utils.DEFAULT_OUTTMPL["default"])
         )
 
         yield Job(url_list, ydl_opts, prog.parse_interval(), logger=prog.logger)
