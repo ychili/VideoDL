@@ -2,8 +2,11 @@
 requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
-[tool.pylint.format]
-max-line-length = 80
+[tool.isort]
+profile = "black"
+
+[tool.mypy]
+python_version = "3.8"
 
 [tool.pylint."messages control"]
 disable = "missing-docstring"

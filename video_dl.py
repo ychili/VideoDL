@@ -2,10 +2,12 @@
 #
 """Video download manager for yt-dlp"""
 
+from __future__ import annotations
 
 import argparse
 import collections
 import configparser
+import dataclasses
 import fnmatch
 import functools
 import json
@@ -15,23 +17,109 @@ import random
 import sys
 import threading
 import time
+from collections.abc import Callable, Iterator, Mapping, MutableMapping
+from pathlib import Path
+from typing import Any, NoReturn, TypeVar
 
-import yt_dlp
-from yt_dlp import optparse
+import yt_dlp  # type: ignore
 
 try:
-    import yaml
-except ImportError as err:
-    YAML_ERROR = err
+    import yaml as _yaml
+except ImportError:
+    _HAS_YAML = False
 else:
-    YAML_ERROR = None
-    try:
-        yaml.Loader = yaml.CLoader
-    except AttributeError:
-        pass
+    _HAS_YAML = True
 
-__prog__ = "VideoDL"
-__version__ = "0.8.0"
+__version__ = "0.9.0"
+PROG = "VideoDL"
+CONSOLE_FMT = "%(module)s: %(levelname)s: %(message)s"
+LEGACY_LOG_FMT = "%(asctime)s *** %(levelname)s %(message)s"
+ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
+
+D = TypeVar("D", bound="Duration")
+
+
+class Duration(float):
+    """A duration of seconds"""
+
+    @classmethod
+    def parse_string(cls: type[D], seconds: str) -> D:
+        """Convert a string representing a decimal, positive, real number."""
+        dur = float(seconds)
+        if not 0.0 <= dur <= threading.TIMEOUT_MAX:
+            raise ValueError("duration negative or too large")
+        return cls(dur)
+
+    def format(self) -> str:
+        t_min, t_sec = divmod(self, 60.0)
+        if t_min <= 0.0:
+            return f"{t_sec:.1f}s"
+        return f"{t_min:.0f}m{t_sec:.0f}s"
+
+    def __repr__(self) -> str:
+        return f"{type(self).__name__}({super().__repr__()})"
+
+
+@dataclasses.dataclass
+class TimeInterval:
+    lower: Duration = Duration(0.0)
+    upper: Duration = Duration(0.0)
+
+    def random_duration(self) -> Duration:
+        return Duration(random.uniform(self.lower, self.upper))
+
+
+class Job:
+    def __init__(
+        self,
+        urls: list[str],
+        options: MutableMapping[str, Any] | None = None,
+        sleep_interval: tuple[float, float] | TimeInterval = TimeInterval(),
+        logger: logging.Logger | logging.LoggerAdapter | None = None,
+    ) -> None:
+        self.urls = urls
+        self.options = options if options is not None else {}
+        self.options["progress_hooks"] = [self.progress_hook]
+        if isinstance(sleep_interval, TimeInterval):
+            self.sleep_interval = sleep_interval
+        else:
+            self.sleep_interval = TimeInterval(*map(Duration, sleep_interval))
+        self.logger = logger or logging.getLogger(PROG)
+
+    def random_sleep(self) -> Duration:
+        period = self.sleep_interval.random_duration()
+        if period <= 0.0:
+            return Duration(0.0)
+        self.logger.info("sleeping for %s before starting", period.format())
+        time.sleep(period)
+        return period
+
+    def download(self) -> None:
+        self.logger.debug("video queue: %s", self.urls)
+        with yt_dlp.YoutubeDL(self.options) as ydl:
+            self.logger.info("starting download")
+            self.logger.debug(ydl.params)
+            error_code = ydl.download(self.urls)
+        if error_code:
+            self.logger.error("some videos failed to download")
+
+    def progress_hook(self, progress_info: Mapping):
+        if progress_info["status"] == "error":
+            self.logger.error("error with job")
+            self.logger.debug(progress_info["info_dict"])
+        if progress_info["status"] == "finished":
+            self.logger.info(
+                "Done downloading, now converting: %s",
+                progress_info["info_dict"].get("title", "<no title>"),
+            )
+            self.logger.debug(
+                "final filename: '%s', tmpfilename: '%s', "
+                "downloaded_bytes: %d, seconds elapsed: %d",
+                progress_info.get("filename"),
+                progress_info.get("tmpfilename"),
+                progress_info.get("downloaded_bytes"),
+                progress_info.get("elapsed"),
+            )
 
 
 class ProgramLogger(logging.LoggerAdapter):
@@ -42,111 +130,88 @@ class ProgramLogger(logging.LoggerAdapter):
 
 
 class Program:
-    """Extract parameters from `section` of `config`.
+    """Extract parameters from *section* of *config*.
 
     Methods generally handle the usual exceptions, logging the exception and
     returning None.
     """
-    console_fmt = "%(module)s: %(levelname)s: %(message)s"
-    file_fmt = "%(asctime)s %(levelno)s %(message)s"
 
-    def __init__(self, config, section):
+    FILE_FMT = "%(asctime)s %(levelno)s %(message)s"
+
+    def __init__(self, config: configparser.ConfigParser, section: str) -> None:
         self.section = section
         self.map = config[section]
-        self.logger = ProgramLogger(
-            logging.getLogger(__prog__), {"section": section})
-        self.error = None
+        self.logger = ProgramLogger(logging.getLogger(PROG), {"section": section})
 
-    def download(self, url_list, options=None):
-        """Download list of URLs."""
-        self.logger.debug("video queue: %s", url_list)
-        with yt_dlp.YoutubeDL(options or {}) as ydl:
-            self.logger.info("starting download")
-            self.logger.debug(ydl.params)
-            error_code = ydl.download(url_list)
-        if error_code:
-            self.logger.error("some videos failed to download")
-
-    def path_is_writable(self, key):
-        """For value of config key, test if value is writable path.
-
-        Note this is a convenience not a security feature.
-
-        Returns: path value if writable; False if not writable; None if key
-          not found
-        """
-        w_path = self.get_required(key)
-        if not w_path:
-            return None
-        if os.access(w_path, os.W_OK):
-            return w_path
-        return False
-
-    def read_source(self, source="Source"):
-        """For value of config key `source`, read list file.
-
-        Returns: list of lines in file (ignoring comments); None if key not
-          found or file not readable
-        """
-        s_path = self.get_required(source)
+    def read_source(self, key: str = "Source") -> list[str] | None:
+        s_path = self.get_required(key=key)
         if not s_path:
             return None
         try:
             s_file = open(s_path, "r", encoding="utf-8", errors="ignore")
-        except OSError:
-            self.logger.exception("can't read source file %s", s_path)
+        except OSError as err:
+            self.logger.exception("can't read source file: %s", err)
             return None
         with s_file:
             self.logger.debug("reading batch urls from '%s'", s_path)
             return yt_dlp.utils.read_batch_urls(s_file)
 
-    def shuffle_source(self, url_list, key="ShuffleSource"):
+    def shuffle_source(self, urls: list[str], key: str = "ShuffleSource") -> None:
         if self.get_boolean(key):
             self.logger.debug("shuffling video queue")
-            random.shuffle(url_list)
+            random.shuffle(urls)
 
-    def read_options(self, options="OptionsFile", interpret=False):
-        """For value of config key `options`, read options from JSON or YAML.
-
-        Returns: dictionary of options from JSON (or YAML) file or empty
-          dictionary if key not found; None if file cannot be located or read
-        """
-        o_path = self.map.get(options)
+    def read_options(self, key: str = "OptionsFile", interpret=False) -> dict | None:
+        o_path = self.map.get(key)
         if not o_path:
-            # No OptionsFile specified or empty value
             return {}
-        load = json.load
-        file_is_yaml = any(fnmatch.fnmatch(o_path, pattern)
-                           for pattern in frozenset({"*.yaml", "*.yml"}))
+        load = self._load_json
+        file_is_yaml = any(
+            fnmatch.fnmatch(o_path, pattern) for pattern in ("*.yaml", "*.yml")
+        )
         if file_is_yaml:
-            if YAML_ERROR:
+            if not _HAS_YAML:
                 self.logger.warning(
-                    "YAML file %s given, but PyYAML is not installed", o_path)
-                # Try parsing as JSON anyway
+                    "YAML file %s given, but PyYAML is not installed", o_path
+                )
+            # Try parsing as JSON anyway
             else:
-                load = functools.partial(yaml.load, Loader=yaml.Loader)
+                load = self._load_yaml
         try:
             o_file = open(o_path, "r", encoding="utf-8")
-        except OSError:
-            self.logger.exception("can't read options file %s", o_path)
+        except OSError as err:
+            self.logger.exception("can't read options file: %s", err)
             return None
         with o_file:
-            try:
-                options = load(o_file)
-            except (json.JSONDecodeError, yaml.YAMLError):
-                self.logger.exception("unable to parse options file %s",
-                                      o_path)
-                return None
+            options = load(o_file)
+        if options is None:
+            self.logger.exception("unable to parse options file: %s", o_path)
+            return None
         if interpret:
             try:
                 return self.interpret_options(options)
-            except optparse.OptParseError:
+            except yt_dlp.optparse.OptParseError:
                 self.logger.exception("error parsing options array")
                 return None
         return options
 
-    def interpret_options(self, options):
-        """Parse argument vector in `options` as command-line options.
+    @staticmethod
+    def _load_json(o_file) -> Any | None:
+        try:
+            return json.load(o_file)
+        except json.JSONDecodeError:
+            return None
+
+    @staticmethod
+    def _load_yaml(o_file) -> Any | None:
+        loader = getattr(_yaml, "CLoader", _yaml.Loader)
+        try:
+            return _yaml.load(o_file, Loader=loader)
+        except _yaml.YAMLError:
+            return None
+
+    def interpret_options(self, options: MutableMapping):
+        """Parse argument vector in *options* as command-line options.
 
         Interpret value of ``VideoDL://options`` as an array of command-line
         options. Postprocessors are appended to the existing list of
@@ -155,8 +220,7 @@ class Program:
         opt_key = "VideoDL://options"
         if array := options.get(opt_key):
             if not isinstance(array, list):
-                self.logger.warning("found key %s, but value is not an array",
-                                    opt_key)
+                self.logger.warning("found key %s, but value is not an array", opt_key)
                 return options
             parsed = cli_to_api(array)
             self.logger.debug("parsed options %s", parsed)
@@ -166,123 +230,85 @@ class Program:
             return collections.ChainMap(options, parsed)
         return options
 
-    def get_date_range(self, start="DateStart", end="DateEnd"):
+    def get_date_range(self, start_key: str = "DateStart", end_key: str = "DateEnd"):
         """For values of config keys, convert to single DateRange object."""
-        start_val = self.map.get(start)
-        end_val = self.map.get(end)
+        start_val = self.map.get(start_key)
+        end_val = self.map.get(end_key)
         return MyDateRange(start=start_val, end=end_val)
 
-    def get_output_logger(self, key="Log", console_level=logging.INFO):
+    def get_output_logger(
+        self, key: str = "Log", console_level: int = logging.INFO
+    ) -> logging.Logger:
         """Configure and return logger for yt_dlp."""
-        log_path = self.map.get(key)
         # Not to be confused with self.logger which is the module logger
         logger = logging.getLogger(name=self.section)
         logger.setLevel(logging.DEBUG)
         if self.distinguish_debug():
-            logger.debug = promote_info_logs(logger.debug)
+            setattr(logger, "debug", promote_info_logs(logger.debug))
         console_hdlr = logging.StreamHandler()
         console_hdlr.setLevel(console_level)
-        console_hdlr.setFormatter(logging.Formatter(self.console_fmt))
+        console_hdlr.setFormatter(logging.Formatter(CONSOLE_FMT))
         logger.addHandler(console_hdlr)
-        if log_path:
-            file_hdlr = logging.FileHandler(
-                log_path, mode=self.parse_log_mode())
+        if log_path := self.map.get(key):
+            file_hdlr = logging.FileHandler(log_path, mode=self.parse_log_mode())
             file_hdlr.setLevel(logging.DEBUG)
             file_hdlr.setFormatter(self.get_output_logger_formatter())
             logger.addHandler(file_hdlr)
         return logger
 
-    def distinguish_debug(self, key="DistinguishDebug"):
+    def distinguish_debug(self, key: str = "DistinguishDebug"):
         return self.get_boolean(key, False)
 
-    def get_output_logger_formatter(self,
-                                    fmt_key="LogFmt",
-                                    datefmt_key="LogDateFmt"):
-        fmt = self.map.get(fmt_key, self.file_fmt)
+    def get_output_logger_formatter(
+        self, fmt_key: str = "LogFmt", datefmt_key: str = "LogDateFmt"
+    ) -> logging.Formatter:
+        fmt = self.map.get(fmt_key, self.FILE_FMT)
         datefmt = self.map.get(datefmt_key)
         return logging.Formatter(fmt=fmt, datefmt=datefmt)
 
-    def parse_log_mode(self, key="LogMode"):
+    def parse_log_mode(self, key: str = "LogMode") -> str:
         log_mode = self.map.get(key, "").lower()
-        if log_mode in frozenset({"a", "append"}):
+        if log_mode in {"a", "append"}:
             return "a"
-        if log_mode in frozenset({"w", "overwrite", "truncate"}):
+        if log_mode in {"w", "overwrite", "truncate"}:
             return "w"
         if log_mode:
             self.logger.warning(
-                "unrecognized LogMode %r, defaulting to Overwrite", log_mode)
+                "unrecognized LogMode %r, defaulting to Overwrite", log_mode
+            )
         return "w"
 
-    def get_required(self, key):
+    def get_required(self, key: str) -> str | None:
         try:
             return self.map[key]
         except KeyError:
-            self.logger.exception("required key %r not found in section", key)
+            self.logger.exception("required key not found in section: %s", key)
             return None
 
-    def get_boolean(self, key, default=False):
+    def get_boolean(self, key: str, default: bool = False) -> bool:
         try:
             return self.map.getboolean(key, default)
         except ValueError:
             self.logger.warning(
                 "unrecognized boolean value for %s: '%s' (defaulting to %s)",
-                key, self.map.get(key), default)
+                key,
+                self.map.get(key),
+                default,
+            )
         return default
 
-    def progress_hook(self, progress_info):
-        if progress_info["status"] == "error":
-            self.logger.error("error with job")
-            self.logger.debug(progress_info["info_dict"])
-            self.error = True
-        if progress_info["status"] == "finished":
-            self.logger.info("Done downloading, now converting: %s",
-                progress_info["info_dict"].get("title", "<no title>"))
-            self.logger.debug(
-                "final filename: '%s', tmpfilename: '%s', "
-                "downloaded_bytes: %d, seconds elapsed: %d",
-                progress_info.get("filename"),
-                progress_info.get("tmpfilename"),
-                progress_info.get("downloaded_bytes"),
-                progress_info.get("elapsed"))
-
-    def parse_interval_random(self, key):
-        """
-        Parse value of config key as an interval, and return a random number
-        in that interval.
-
-        The value should consist of either one argument or two comma-separated
-        arguments. Arguments should be parsable by `duration`. If one argument,
-        the interval is [0, arg]. Otherwise the result is bounded by the two
-        arguments.
-
-        If the value is missing or cannot be parsed, return 0.0.
-        """
+    def parse_interval(self, key: str = "SleepInterval") -> TimeInterval:
         value = self.map.get(key)
         if not value:
-            return 0.0
+            return TimeInterval()
         try:
-            argv = iter([duration(arg) for arg in value.split(',')])
+            argv = iter([Duration.parse_string(arg) for arg in value.split(",")])
         except ValueError:
             self.logger.warning("invalid argument to %s: %s", key, value)
-            return 0.0
-        upper = next(argv, 0.0)
-        lower = next(argv, 0.0)
-        return random.uniform(lower, upper)
-
-    def random_sleep(self, key="SleepInterval"):
-        """
-        Parse value of config key, and sleep for a random duration in that
-        interval (as parsed by `parse_interval_random`).
-
-        Returns: number of seconds slept for
-        """
-        interval = self.parse_interval_random(key)
-        if interval <= 0.0:
-            return 0.0
-        self.logger.info("sleeping for %s before starting",
-                         format_duration(interval))
-        time.sleep(interval)
-        return interval
+            return TimeInterval()
+        lower = next(argv, Duration(0.0))
+        upper = next(argv, Duration(0.0))
+        return TimeInterval(lower=lower, upper=upper)
 
 
 class MyDateRange(yt_dlp.utils.DateRange):
@@ -292,79 +318,99 @@ class MyDateRange(yt_dlp.utils.DateRange):
     MyDateRange(start='20050403', end='99991231')
     """
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         # Turn self.start and self.end back into canonical string format
         date_fmt = "%Y%m%d"
         # glibc represents year 1 as '1', while (all?) other C libraries
         # represent it as '0001', hence str.zfill for cross-platform
         # consistency. See issue32195.
         start_str = self.start.strftime(date_fmt).zfill(8)
-        return (f"{type(self).__name__}("
-                f"start='{start_str}', end='{self.end:{date_fmt}}')")
+        return (
+            f"{type(self).__name__}("
+            f"start='{start_str}', end='{self.end:{date_fmt}}')"
+        )
 
 
-def main():
+def main() -> None:
     args = parse_cla()
-    config = search_configs(args.config)
-    if not config:
-        logger = get_logger()
-        logger.error("unable to find configuration file")
-        return 100
-    logger = get_logger(**get_logger_options(config),
-                        console_level=args.log_level)
-    logger.debug("config file(s): %s", config.get("DEFAULT", "PATHS"))
-    logger.debug("%s version %s", __prog__, __version__)
-
-    if args.sleep:
-        interval = random.uniform(0.0, args.sleep)
-        logger.info("sleeping for %s before starting",
-                    format_duration(interval))
-        time.sleep(interval)
+    init_logging(args.log_level)
+    try:
+        config = search_configs(args.config)
+    except configparser.Error as err:
+        die(100, "error with configuration file: %s", err)
+    if not getattr(config, "paths"):
+        die(100, "unable to find configuration file")
+    setup_file_logging(config)
+    logger = logging.getLogger(PROG)
+    logger.debug("config file(s): %s", getattr(config, "paths"))
+    logger.debug("%s version %s", PROG, __version__)
 
     clock_start = time.perf_counter()
-    for job in args.job_identifier or config.sections():
+    jobs = list(parse_config(config, args.job_identifier, args.log_level))
+    logger.debug("%d job(s) queued", len(jobs))
+    if jobs and args.sleep:
+        period = TimeInterval(Duration(0.0), args.sleep).random_duration()
+        logger.info("sleeping for %s before starting", period.format())
+        time.sleep(period)
+    for job in parse_config(config, args.job_identifier, args.log_level):
+        clock_start += job.random_sleep()
+        job.download()
+    clock_stop = time.perf_counter()
+    logger.info("finished all jobs in %s", Duration(clock_stop - clock_start).format())
+
+
+def parse_config(
+    config: configparser.ConfigParser,
+    job_identifiers: list[str] | None = None,
+    console_level: int = logging.INFO,
+) -> Iterator[Job]:
+    logger = logging.getLogger(PROG)
+
+    for job in job_identifiers or config.sections():
         if not config.has_section(job):
-            logger.error("no config section found with name %r", job)
+            logger.error("no config section found with name: %s", job)
             continue
         prog = Program(config=config, section=job)
-        subdir = prog.path_is_writable(key="SubDir")
-        if not subdir:
-            subdir = prog.get_required("SubDir")
-            logger.warning("path is not writable: %s, skipping %s",
-                           subdir, job)
+        subdir_val = prog.get_required(key="SubDir")
+        if not subdir_val:
             continue
-        if not os.path.isdir(subdir):
-            logger.warning("path is not a directory: %s, skipping %s",
-                           subdir, job)
+        subdir = Path(subdir_val)
+        if not os.access(subdir, os.W_OK):
+            # Note this is a convenience not a security feature.
+            logger.warning("path is not writable, skipping %s: %s", job, subdir)
+            continue
+        if not subdir.is_dir():
+            logger.warning("path is not a directory, skipping %s: %s", job, subdir)
             continue
         url_list = prog.read_source()
         if url_list is None:
             logger.warning("unable to read source file, skipping %s", job)
             continue
-        prog.shuffle_source(url_list)
         ydl_opts = prog.read_options(interpret=True)
         if ydl_opts is None:
             logger.warning("unable to read options file, skipping %s", job)
             continue
+
+        prog.shuffle_source(url_list)
+
         ydl_opts["download_archive"] = prog.map.get("DownloadArchive")
-        ydl_opts["logger"] = prog.get_output_logger(
-            console_level=args.log_level)
+        ydl_opts["logger"] = prog.get_output_logger(console_level=console_level)
         ydl_opts["daterange"] = prog.get_date_range()
-        ydl_opts["progress_hooks"] = [prog.progress_hook]
-        # Make outtmpl absolute
-        outtmpl = ydl_opts.get("outtmpl")
-        ydl_opts["outtmpl"] = os.path.join(
-            subdir, outtmpl or yt_dlp.utils.DEFAULT_OUTTMPL["default"])
-        clock_start += prog.random_sleep()
-        prog.download(url_list, ydl_opts)
-    clock_stop = time.perf_counter()
-    logger.info("finished all jobs in %s",
-                format_duration(clock_stop - clock_start))
-    return 0
+        ydl_opts["outtmpl"] = subdir / ydl_opts.get(
+            "outtmpl", yt_dlp.utils.DEFAULT_OUTTMPL["default"]
+        )
+
+        yield Job(url_list, ydl_opts, prog.parse_interval(), logger=prog.logger)
 
 
-def cli_to_api(opts):
-    """Return a dictionary of options parsed from `opts`.
+def die(status: int, *msg: object) -> NoReturn:
+    logger = logging.getLogger(PROG)
+    logger.error(*msg)
+    sys.exit(status)
+
+
+def cli_to_api(args: list[str]) -> dict:
+    """Return a dictionary of options parsed from *args*.
 
     Only options with values different from the defaults will be included.
 
@@ -373,59 +419,57 @@ def cli_to_api(opts):
     >>> cli_to_api(["--concurrent-fragments=2"])
     {'concurrent_fragment_downloads': 2}
     """
-    def parse_options(opts):
-        return yt_dlp.parse_options(opts).ydl_opts
+
+    def parse_options(args: list[str]) -> dict:
+        return yt_dlp.parse_options(args).ydl_opts
+
     default_opts = parse_options([])
-    opts = parse_options(opts)
-    diff = {key: val for key, val in opts.items()
-            if default_opts[key] != val}
+    opts = parse_options(args)
+    diff = {key: val for key, val in opts.items() if default_opts[key] != val}
     if "postprocessors" in diff:
-        diff["postprocessors"] = [pp for pp in diff["postprocessors"]
-                                  if pp not in default_opts["postprocessors"]]
+        diff["postprocessors"] = [
+            pp
+            for pp in diff["postprocessors"]
+            if pp not in default_opts["postprocessors"]
+        ]
     return diff
 
 
-def promote_info_logs(std_debug):
+def promote_info_logs(std_debug: Callable[..., None]) -> Callable[..., None]:
     """
     Return a logging.Logger.debug method that distinguishes debug by the msg
     prefix '[debug] '.
     """
+
     @functools.wraps(std_debug)
-    def wrapper(msg, *args, **kwargs):
-        if msg.startswith("[debug] "):
+    def wrapper(msg: object, *args: object, **kwargs: Any):
+        # Assuming msg is a str
+        try:
+            debug = msg.startswith("[debug] ")  # type: ignore
+        except AttributeError:
+            debug = False
+        if debug:
             return std_debug(msg, *args, **kwargs)
-        return std_debug.__self__.info(msg, *args, **kwargs)
+        return std_debug.__self__.info(msg, *args, **kwargs)  # type: ignore
+
     return wrapper
 
 
-def get_logger_options(config):
-    opts = {}
-    opts["file"] = config.get("DEFAULT", "MasterLog", fallback=None)
-    opts["file_level"] = parse_log_level(config.get(
-        "DEFAULT", "MasterLogLevel", fallback=""))
-    opts["file_fmt"] = config.get("DEFAULT", "MasterLogFmt", fallback=None)
-    opts["file_datefmt"] = config.get(
-        "DEFAULT", "MasterLogDateFmt", fallback=None)
-    return opts
-
-
-def search_configs(config_path=None):
-    """Read config file at config_path else search."""
+def search_configs(config_path: str | None = None) -> configparser.ConfigParser:
+    """Read config file at *config_path* else search."""
     config = configparser.ConfigParser(
-        interpolation=configparser.ExtendedInterpolation())
-    if config_path and os.path.isabs(config_path):
+        interpolation=configparser.ExtendedInterpolation()
+    )
+    if config_path and Path(config_path).is_absolute():
         # absolute path given -- read one only
         paths = config.read(config_path)
     else:
         paths = config.read(search_nearby_files(config_path))
-    if not paths:
-        return None
-    # Include in config list of filenames which were successfully parsed
-    config.set("DEFAULT", "PATHS", str(paths))
+    setattr(config, "paths", paths)
     return config
 
 
-def search_nearby_files(basename=None):
+def search_nearby_files(basename: str | None = None) -> Iterator[Path]:
     r"""Search for configuration files in the following places.
 
     Windows:
@@ -442,52 +486,57 @@ def search_nearby_files(basename=None):
     All:
         - current directory
     """
-    standalone = __prog__ + ".conf"
+    standalone = f"{PROG}.conf"
     select = basename or "default.conf"
     if os.name == "nt":
-        if (appdata := os.getenv("APPDATA")):
-            yield os.path.join(appdata, __prog__, select)
-        if (userprofile := os.getenv("USERPROFILE")):
-            yield os.path.join(userprofile, __prog__, select)
-            yield os.path.join(userprofile, standalone)
+        if appdata := os.getenv("APPDATA"):
+            yield Path(appdata, PROG, select)
+        if userprofile := os.getenv("USERPROFILE"):
+            yield Path(userprofile, PROG, select)
+            yield Path(userprofile, standalone)
     elif os.name == "posix":
-        yield os.path.join("etc", standalone)
-        if (xdg_config_home := os.getenv("XDG_CONFIG_HOME")):
-            yield os.path.join(xdg_config_home, __prog__, select)
-        if (home := os.getenv("HOME")):
-            yield os.path.join(home, ".config", __prog__, select)
-            yield os.path.join(home, "." + standalone)
+        yield Path("etc", standalone)
+        if xdg_config_home := os.getenv("XDG_CONFIG_HOME"):
+            yield Path(xdg_config_home, PROG, select)
+        if home := os.getenv("HOME"):
+            yield Path(home, ".config", PROG, select)
+            yield Path(home, f".{standalone}")
     if basename:
-        yield os.path.join(".", basename)
-    yield os.path.join(".", standalone)
+        yield Path.cwd() / basename
+    yield Path.cwd() / standalone
 
 
-def get_logger(file=None,
-               console_level=logging.INFO,
-               file_level=logging.DEBUG,
-               file_fmt=None,
-               file_datefmt=None):
-    """Configure and return module logger."""
-    logger = logging.getLogger(__prog__)
+def init_logging(console_level: int = logging.INFO) -> None:
+    """Initialize the module logger with stderr logging."""
+    logger = logging.getLogger(PROG)
     logger.setLevel(logging.DEBUG)
     console_hdlr = logging.StreamHandler()
     console_hdlr.setLevel(console_level)
-    console_hdlr.setFormatter(logging.Formatter(Program.console_fmt))
+    console_hdlr.setFormatter(logging.Formatter(CONSOLE_FMT))
     logger.addHandler(console_hdlr)
-    if file:
-        file_hdlr = logging.FileHandler(file)
-        file_hdlr.setLevel(file_level)
-        legacy_fmt = "%(asctime)s *** %(levelname)s %(message)s"
-        fmt = file_fmt if file_fmt is not None else legacy_fmt
-        iso_8601_sec = "%Y-%m-%dT%H:%M:%S%z"
-        datefmt = file_datefmt if file_datefmt is not None else iso_8601_sec
-        file_hdlr.setFormatter(
-            logging.Formatter(fmt=fmt, datefmt=datefmt))
+
+
+def setup_file_logging(config: configparser.ConfigParser) -> None:
+    """Add file logging to the module logger."""
+    settings = config.defaults()
+    logger = logging.getLogger(PROG)
+    if file := settings.get("MasterLog"):
+        try:
+            file_hdlr = logging.FileHandler(file)
+        except OSError as err:
+            logger.error("unable to open MasterLog for writing: %s", err)
+            return
+        if file_level := settings.get("MasterLogLevel"):
+            file_hdlr.setLevel(parse_log_level(file_level))
+        else:
+            file_hdlr.setLevel(logging.DEBUG)
+        fmt = settings.get("MasterLogFmt", LEGACY_LOG_FMT)
+        datefmt = settings.get("MasterLogDateFmt", ISO_8601_SEC)
+        file_hdlr.setFormatter(logging.Formatter(fmt=fmt, datefmt=datefmt))
         logger.addHandler(file_hdlr)
-    return logger
 
 
-def parse_log_level(string):
+def parse_log_level(string: str):
     """Parse log level value from config.
 
     Accept a string containing either a standard log level name ("DEBUG",
@@ -501,46 +550,49 @@ def parse_log_level(string):
         return logging.DEBUG
 
 
-def parse_cla():
+def parse_cla() -> argparse.Namespace:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
-    parser.add_argument("-V", "--version", action="version",
-                        version=f"%(prog)s {__version__}")
-    parser.add_argument("job_identifier", nargs="*", metavar="job-identifier",
-                        help="section in configuration to read "
-                             "(default is all sections)")
-    parser.add_argument("-C", "--config", metavar="FILE",
-                        type=os.path.expanduser,
-                        help="load configuration from %(metavar)s")
+    parser.add_argument(
+        "-V", "--version", action="version", version=f"%(prog)s {__version__}"
+    )
+    parser.add_argument(
+        "job_identifier",
+        nargs="*",
+        metavar="job-identifier",
+        help="section in configuration to read (default is all sections)",
+    )
+    parser.add_argument(
+        "-C", "--config", metavar="FILE", help="load configuration from %(metavar)s"
+    )
     verbosity = parser.add_mutually_exclusive_group()
-    verbosity.add_argument("-d", "--debug", action="store_const",
-                           const=logging.DEBUG, default=logging.INFO,
-                           dest="log_level",
-                           help="print debug information")
-    verbosity.add_argument("-q", "--quiet", action="store_const",
-                           const=logging.WARNING, default=logging.INFO,
-                           dest="log_level",
-                           help="don't print info messages")
-    parser.add_argument("-s", "--sleep", type=duration, metavar="SEC",
-                        help="sleep for a random duration between 0 and "
-                             "%(metavar)s seconds before starting")
+    verbosity.add_argument(
+        "-d",
+        "--debug",
+        action="store_const",
+        const=logging.DEBUG,
+        default=logging.INFO,
+        dest="log_level",
+        help="print debug information",
+    )
+    verbosity.add_argument(
+        "-q",
+        "--quiet",
+        action="store_const",
+        const=logging.WARNING,
+        default=logging.INFO,
+        dest="log_level",
+        help="don't print info messages",
+    )
+    parser.add_argument(
+        "-s",
+        "--sleep",
+        type=Duration.parse_string,
+        metavar="SEC",
+        help="sleep for a random duration between 0 and %(metavar)s seconds before starting",
+    )
     return parser.parse_args()
 
 
-def duration(seconds):
-    """Convert a string representing a decimal, positive, real number."""
-    dur = float(seconds)
-    if 0.0 <= dur <= threading.TIMEOUT_MAX:
-        return dur
-    raise ValueError
-
-
-def format_duration(seconds):
-    t_min, t_sec = divmod(seconds, 60.0)
-    if t_min <= 0.0:
-        return f"{t_sec:.1f}s"
-    return f"{t_min:.0f}m{t_sec:.0f}s"
-
-
 if __name__ == "__main__":
-    sys.exit(main())
+    main()
