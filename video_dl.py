@@ -352,7 +352,7 @@ def main() -> None:
         period = TimeInterval(Duration(0.0), args.sleep).random_duration()
         logger.info("sleeping for %s before starting", period.format())
         time.sleep(period)
-    for job in parse_config(config, args.job_identifier, args.log_level):
+    for job in jobs:
         clock_start += job.random_sleep()
         job.download()
     clock_stop = time.perf_counter()
