@@ -352,6 +352,7 @@ def main() -> None:
         period = TimeInterval(Duration(0.0), args.sleep).random_duration()
         logger.info("sleeping for %s before starting", period.format())
         time.sleep(period)
+        clock_start += period
     for job in jobs:
         clock_start += job.random_sleep()
         job.download()
