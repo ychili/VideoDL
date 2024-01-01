@@ -51,6 +51,11 @@ class Duration(float):
         return cls(dur)
 
     def format(self) -> str:
+        """Return formatted duration string.
+
+        >>> Duration(500).format()
+        '8m20s'
+        """
         t_min, t_sec = divmod(self, 60.0)
         if t_min <= 0.0:
             return f"{t_sec:.1f}s"

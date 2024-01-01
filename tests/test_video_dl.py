@@ -106,6 +106,18 @@ class TestDuration(unittest.TestCase):
         self.assertRaises(ValueError, dur, "-1")
         self.assertRaises(ValueError, dur, "inf")
 
+    def test_random_duration(self):
+        for _ in range(4):
+            dur = video_dl.TimeInterval(
+                video_dl.Duration(1), video_dl.Duration(9)
+            ).random_duration()
+            self.assertGreaterEqual(dur, 1)
+            self.assertLessEqual(dur, 9)
+
+    def test_format(self):
+        self.assertEqual(video_dl.Duration(-12).format(), "48.0s")
+        self.assertEqual(video_dl.Duration(1000).format(), "16m40s")
+
 
 class TestFunctions(unittest.TestCase):
     def test_parse_log_level(self):
