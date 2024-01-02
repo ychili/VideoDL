@@ -47,7 +47,8 @@ class Duration(float):
         """Convert a string representing a decimal, positive, real number."""
         dur = float(seconds)
         if not 0.0 <= dur <= threading.TIMEOUT_MAX:
-            raise ValueError("duration negative or too large")
+            msg = f"duration negative or too large: {dur!r}"
+            raise ValueError(msg)
         return cls(dur)
 
     def format(self) -> str:
