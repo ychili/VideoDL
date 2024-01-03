@@ -22,7 +22,10 @@ for dest_dir, files in file_spec:
         if os.path.exists(relate_to_root(filename)):
             present_files.append(filename)
         else:
-            warnings.warn(f"File {filename} is not present! Try running 'make' first.")
+            warnings.warn(
+                f"File {filename} is not present! Try running 'make' first.",
+                stacklevel=2,
+            )
     if present_files:
         data_files.append((dest_dir, files))
 
