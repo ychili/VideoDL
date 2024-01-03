@@ -37,6 +37,7 @@ LEGACY_LOG_FMT = "%(asctime)s *** %(levelname)s %(message)s"
 ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
 
 D = TypeVar("D", bound="Duration")
+MM = TypeVar("MM", bound="MutableMapping")
 
 
 class Duration(float):
@@ -111,7 +112,7 @@ class Job:
         if error_code:
             self.logger.error("some videos failed to download")
 
-    def progress_hook(self, progress_info: Mapping):
+    def progress_hook(self, progress_info: Mapping) -> None:
         if progress_info["status"] == "error":
             self.logger.error("error with job")
             self.logger.debug(progress_info["info_dict"])
@@ -169,7 +170,9 @@ class Program:
             self.logger.debug("shuffling video queue")
             random.shuffle(urls)
 
-    def read_options(self, key: str = "OptionsFile", interpret=False) -> dict | None:
+    def read_options(
+        self, key: str = "OptionsFile", interpret: bool = False
+    ) -> dict | collections.ChainMap | None:
         o_path = self.map.get(key)
         if not o_path:
             return {}
@@ -218,7 +221,7 @@ class Program:
         except _yaml.YAMLError:
             return None
 
-    def interpret_options(self, options: MutableMapping):
+    def interpret_options(self, options: MM) -> MM | collections.ChainMap:
         """Parse argument vector in *options* as command-line options.
 
         Interpret value of ``VideoDL://options`` as an array of command-line
@@ -238,7 +241,9 @@ class Program:
             return collections.ChainMap(options, parsed)
         return options
 
-    def get_date_range(self, start_key: str = "DateStart", end_key: str = "DateEnd"):
+    def get_date_range(
+        self, start_key: str = "DateStart", end_key: str = "DateEnd"
+    ) -> MyDateRange:
         """For values of config keys, convert to single DateRange object."""
         start_val = self.map.get(start_key)
         end_val = self.map.get(end_key)
@@ -264,7 +269,7 @@ class Program:
             logger.addHandler(file_hdlr)
         return logger
 
-    def distinguish_debug(self, key: str = "DistinguishDebug"):
+    def distinguish_debug(self, key: str = "DistinguishDebug") -> bool:
         return self.get_boolean(key, False)
 
     def get_output_logger_formatter(
