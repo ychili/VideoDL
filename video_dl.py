@@ -80,13 +80,15 @@ class Job:
         self,
         urls: list[str],
         options: MutableMapping[str, Any] | None = None,
-        sleep_interval: tuple[float, float] | TimeInterval = TimeInterval(),
+        sleep_interval: TimeInterval | tuple[float, float] | None = None,
         logger: logging.Logger | logging.LoggerAdapter | None = None,
     ) -> None:
         self.urls = urls
         self.options = options if options is not None else {}
         self.options["progress_hooks"] = [self.progress_hook]
-        if isinstance(sleep_interval, TimeInterval):
+        if sleep_interval is None:
+            self.sleep_interval = TimeInterval()
+        elif isinstance(sleep_interval, TimeInterval):
             self.sleep_interval = sleep_interval
         else:
             self.sleep_interval = TimeInterval(*map(Duration, sleep_interval))
