@@ -19,7 +19,7 @@ import threading
 import time
 from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from pathlib import Path
-from typing import Any, NoReturn, TypeVar
+from typing import Any, NamedTuple, NoReturn, TypeVar
 
 import yt_dlp  # type: ignore
 
@@ -337,6 +337,11 @@ class MyDateRange(yt_dlp.utils.DateRange):
         )
 
 
+class Config(NamedTuple):
+    parser: configparser.ConfigParser
+    files_read: list[str] | None = None
+
+
 def main() -> None:
     args = parse_cla()
     init_logging(args.log_level)
@@ -344,15 +349,15 @@ def main() -> None:
         config = search_configs(args.config)
     except configparser.Error as err:
         die(100, "error with configuration file: %s", err)
-    if not getattr(config, "paths"):
+    if not config.files_read:
         die(100, "unable to find configuration file")
-    setup_file_logging(config)
+    setup_file_logging(config.parser)
     logger = logging.getLogger(PROG)
-    logger.debug("config file(s): %s", getattr(config, "paths"))
+    logger.debug("config file(s): %s", config.files_read)
     logger.debug("%s version %s", PROG, __version__)
 
     clock_start = time.perf_counter()
-    jobs = list(parse_config(config, args.job_identifier, args.log_level))
+    jobs = list(parse_config(config.parser, args.job_identifier, args.log_level))
     logger.debug("%d job(s) queued", len(jobs))
     if jobs and args.sleep:
         period = TimeInterval(Duration(0.0), args.sleep).random_duration()
@@ -462,18 +467,17 @@ def promote_info_logs(std_debug: Callable[..., None]) -> Callable[..., None]:
     return wrapper
 
 
-def search_configs(config_path: str | None = None) -> configparser.ConfigParser:
+def search_configs(config_path: str | None = None) -> Config:
     """Read config file at *config_path* else search."""
-    config = configparser.ConfigParser(
+    parser = configparser.ConfigParser(
         interpolation=configparser.ExtendedInterpolation()
     )
     if config_path and Path(config_path).is_absolute():
         # absolute path given -- read one only
-        paths = config.read(config_path)
+        paths = parser.read(config_path)
     else:
-        paths = config.read(search_nearby_files(config_path))
-    setattr(config, "paths", paths)
-    return config
+        paths = parser.read(search_nearby_files(config_path))
+    return Config(parser=parser, files_read=paths)
 
 
 def search_nearby_files(basename: str | None = None) -> Iterator[Path]:
