@@ -47,3 +47,6 @@ $(DATADIR):
 test:
 	$(PYTHON) -m doctest video_dl.py
 	$(PYTHON) -m unittest tests/test*.py
+
+
+.PHONY: docs clean test
