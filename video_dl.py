@@ -554,7 +554,7 @@ def setup_file_logging(config: configparser.ConfigParser) -> None:
         logger.addHandler(file_hdlr)
 
 
-def parse_log_level(string: str):
+def parse_log_level(string: str) -> int:
     """Parse log level value from config.
 
     Accept a string containing either a standard log level name ("DEBUG",
