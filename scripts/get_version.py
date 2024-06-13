@@ -2,6 +2,8 @@
 #
 # usage: get_version.py *python_src*
 
+from __future__ import annotations
+
 import sys
 from collections.abc import Iterable
 
