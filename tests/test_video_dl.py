@@ -145,6 +145,10 @@ class TestFunctions(unittest.TestCase):
 class TestMyDateRange(unittest.TestCase):
     """Make sure `MyDateRange` inherits the features we expect."""
 
+    @staticmethod
+    def _today():
+        return datetime.datetime.now(tz=datetime.timezone.utc).date()
+
     def test_daterange(self):
         _21_century = video_dl.MyDateRange("20000101", "21000101")
         self.assertFalse("19991231" in _21_century)
@@ -153,15 +157,15 @@ class TestMyDateRange(unittest.TestCase):
         self.assertTrue("19690721" in _ac)
 
     def test_default_values(self):
-        my = video_dl.MyDateRange()
-        self.assertIn(datetime.date.today(), my)
+        my_date_range = video_dl.MyDateRange()
+        self.assertIn(self._today(), my_date_range)
 
     def test_date_from_str(self):
         recent = video_dl.MyDateRange(start="today-6day")
-        self.assertIn(datetime.date.today(), recent)
+        self.assertIn(self._today(), recent)
         self.assertNotIn(datetime.date(2005, 4, 3), recent)
         old = video_dl.MyDateRange(end="today-6days")
-        self.assertNotIn(datetime.date.today(), old)
+        self.assertNotIn(self._today(), old)
         self.assertIn(datetime.date(2005, 4, 3), old)
 
 
