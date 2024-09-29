@@ -257,7 +257,9 @@ class Program:
         logger = logging.getLogger(name=self.section)
         logger.setLevel(logging.DEBUG)
         if self.distinguish_debug():
-            setattr(logger, "debug", promote_info_logs(logger.debug))
+            # Avoid mypy error "can't assign to a method". This is a limitation
+            # of mypy (issue #708).
+            logger.debug = promote_info_logs(logger.debug)  # type: ignore
         console_hdlr = logging.StreamHandler()
         console_hdlr.setLevel(console_level)
         console_hdlr.setFormatter(logging.Formatter(CONSOLE_FMT))
