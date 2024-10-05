@@ -10,3 +10,35 @@ python_version = "3.8"
 
 [tool.pylint."messages control"]
 disable = "missing-docstring"
+
+[tool.ruff.lint]
+ignore = [
+    "SIM115", # open-file-with-context-handler
+]
+select = [
+    "E",      # pycodestyle Error
+    "W",      # pycodestyle Warning
+    "F",      # Pyflakes
+    "N",      # pep8-naming
+    "B",      # flake8-bugbear
+    "A",      # flake8-builtins
+    "C4",     # flake8-comprehensions
+    "DTZ",    # flake8-datetimez
+    "FA",     # flake8-future-annotations
+    "ISC",    # flake8-implicit-str-concat
+    "PIE",    # flake8-pie
+    "RSE",    # flake8-raise
+    "RET",    # flake8-return
+    "SIM",    # flake8-simplify
+    "PL",     # Pylint
+    "RUF",    # Ruff-specific rules
+]
+
+[tool.ruff.lint.pycodestyle]
+max-line-length = 100
+
+[tool.ruff.lint.flake8-bugbear]
+# Extend the list of functions returning "immutable" objects,
+# allowing them to be used in argument defaults (B008) and
+# dataclass defaults (RUF009).
+extend-immutable-calls = ["video_dl.Duration"]
