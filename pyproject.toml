@@ -11,6 +11,9 @@ python_version = "3.8"
 [tool.pylint."messages control"]
 disable = "missing-docstring"
 
+[tool.ruff]
+target-version = "py38"
+
 [tool.ruff.lint]
 ignore = [
     "SIM115", # open-file-with-context-handler
