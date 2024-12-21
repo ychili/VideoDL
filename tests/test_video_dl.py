@@ -150,11 +150,11 @@ class TestMyDateRange(unittest.TestCase):
         return datetime.datetime.now(tz=datetime.timezone.utc).date()
 
     def test_daterange(self):
-        _21_century = video_dl.MyDateRange("20000101", "21000101")
-        self.assertFalse("19991231" in _21_century)
-        self.assertIn("20500615", _21_century)
-        _ac = video_dl.MyDateRange("00010101")
-        self.assertTrue("19690721" in _ac)
+        century_21 = video_dl.MyDateRange("20000101", "21000101")
+        self.assertFalse("19991231" in century_21)
+        self.assertIn("20500615", century_21)
+        ac = video_dl.MyDateRange("00010101")
+        self.assertTrue("19690721" in ac)
 
     def test_default_values(self):
         my_date_range = video_dl.MyDateRange()
