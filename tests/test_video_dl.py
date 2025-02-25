@@ -1,10 +1,24 @@
 import collections
+import collections.abc
 import configparser
 import datetime
 import logging
+import os.path
 import unittest
 
 import video_dl
+
+_EXPECTED_OPTIONS_FROM_EXAMPLE_FILE = {
+    "verbose": True,
+    "sleep_interval": 5,
+    "max_sleep_interval": 30,
+    "ignoreerrors": True,
+    "overwrites": False,
+    "continuedl": False,
+    "windowsfilenames": True,
+    "subtitleslangs": ["all"],
+    "merge_output_format": "mkv",
+}
 
 
 class TestProgram(unittest.TestCase):
@@ -83,6 +97,23 @@ class TestProgram(unittest.TestCase):
                 for msg in recording.output
             )
             self.assertTrue(any(test))
+
+    def test_example_options_file(self):
+        path = os.path.join(os.path.dirname(__file__), "../examples/options.json")
+        key = "OptionsFile"
+        self.prog.map[key] = path
+        with self.assertNoLogs(level=logging.WARNING):
+            options = self.prog.read_options(key=key, interpret=True)
+        self.assertTrue(options)
+        self.assertIsInstance(options, collections.abc.MutableMapping)
+        # Check a subset of expected options.
+        items_to_check = _EXPECTED_OPTIONS_FROM_EXAMPLE_FILE.items()
+        for expected_key, expected_value in items_to_check:
+            self.assertEqual(
+                options[expected_key],
+                expected_value,
+                f"Value of '{expected_key}' differs.",
+            )
 
     def test_interpret_options(self):
         opt_key = "VideoDL://options"
