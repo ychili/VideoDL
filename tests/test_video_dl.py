@@ -190,8 +190,8 @@ class TestMyDateRange(unittest.TestCase):
         century_21 = video_dl.MyDateRange("20000101", "21000101")
         self.assertFalse("19991231" in century_21)
         self.assertIn("20500615", century_21)
-        ac = video_dl.MyDateRange("00010101")
-        self.assertTrue("19690721" in ac)
+        common_era = video_dl.MyDateRange("00010101")
+        self.assertTrue("19690721" in common_era)
 
     def test_default_values(self):
         my_date_range = video_dl.MyDateRange()
