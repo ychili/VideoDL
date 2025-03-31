@@ -366,7 +366,10 @@ def main() -> None:
     logger.debug("%s version %s", PROG, __version__)
 
     clock_start = time.perf_counter()
-    jobs = list(parse_config(config.parser, args.job_identifier, args.log_level))
+    try:
+        jobs = list(parse_config(config.parser, args.job_identifier, args.log_level))
+    except configparser.Error as err:
+        die(100, "error with configuration file: %s", err)
     logger.debug("%d job(s) queued", len(jobs))
     if jobs and args.sleep:
         period = TimeInterval(Duration(0.0), args.sleep).random_duration()
