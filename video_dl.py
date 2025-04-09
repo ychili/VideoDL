@@ -17,6 +17,7 @@ import random
 import sys
 import threading
 import time
+import types
 from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from pathlib import Path
 from typing import Any, NamedTuple, NoReturn, TypeVar
@@ -351,6 +352,14 @@ class Config(NamedTuple):
     files_read: list[str] | None = None
 
 
+# pylint: disable=too-few-public-methods
+class Args(types.SimpleNamespace):
+    job_identifier: list[str]
+    config: str | None
+    log_level: int
+    sleep: Duration | None
+
+
 def main() -> None:
     args = parse_cla()
     init_logging(args.log_level)
@@ -573,7 +582,7 @@ def parse_log_level(string: str) -> int:
         return logging.DEBUG
 
 
-def parse_cla() -> argparse.Namespace:
+def parse_cla() -> Args:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -614,7 +623,7 @@ def parse_cla() -> argparse.Namespace:
         metavar="SEC",
         help="sleep for a random duration between 0 and %(metavar)s seconds before starting",
     )
-    return parser.parse_args()
+    return parser.parse_args(namespace=Args())
 
 
 if __name__ == "__main__":
