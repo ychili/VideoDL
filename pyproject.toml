@@ -8,6 +8,9 @@ profile = "black"
 [tool.mypy]
 python_version = "3.8"
 
+[tool.pylint.main]
+py-version = "3.8"
+
 [tool.pylint."messages control"]
 disable = "missing-docstring"
 
