@@ -152,7 +152,8 @@ class TestDuration(unittest.TestCase):
             self.assertLessEqual(dur, 9)
 
     def test_format(self):
-        self.assertEqual(video_dl.Duration(-12).format(), "48.0s")
+        self.assertEqual(video_dl.Duration(-12).format(), "-12.0s")
+        self.assertEqual(video_dl.Duration(119.9).format(), "2m0s")
         self.assertEqual(video_dl.Duration(1000).format(), "16m40s")
 
 

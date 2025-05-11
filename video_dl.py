@@ -59,10 +59,10 @@ class Duration(float):
         >>> Duration(500).format()
         '8m20s'
         """
-        t_min, t_sec = divmod(self, 60.0)
-        if t_min <= 0.0:
-            return f"{t_sec:.1f}s"
-        return f"{t_min:.0f}m{t_sec:.0f}s"
+        if self <= Duration(60.0):
+            return f"{self:.1f}s"
+        t_min, t_sec = divmod(round(self), 60)
+        return f"{t_min}m{t_sec}s"
 
     def __repr__(self) -> str:
         return f"{type(self).__name__}({super().__repr__()})"
