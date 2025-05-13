@@ -216,7 +216,7 @@ class TestConfigParse(unittest.TestCase):
 
     def test_bad_job_identifier(self):
         with self.assertLogs(level=logging.ERROR):
-            jobs = list(video_dl.parse_config(self.config, "job-id"))
+            jobs = list(video_dl.parse_config(self.config, ["job-id"]))
         self.assertEqual(jobs, [])
 
     def test_minimal_config(self):
