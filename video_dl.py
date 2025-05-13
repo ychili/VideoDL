@@ -153,7 +153,7 @@ class Program:
         self.map = config[section]
         self.logger = ProgramLogger(logging.getLogger(PROG), {"section": section})
 
-    def read_source(self, key: str = "Source") -> list[str] | None:
+    def read_source(self, key: str = "Source") -> list[str | Any] | None:
         s_path = self.get_required(key=key)
         if not s_path:
             return None
