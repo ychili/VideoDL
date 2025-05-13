@@ -166,7 +166,7 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(video_dl.parse_log_level("<any>"), default)
         self.assertEqual(video_dl.parse_log_level("-1"), -1)
         with self.assertRaises(AttributeError):
-            video_dl.parse_log_level(20)
+            video_dl.parse_log_level(20)  # type: ignore
 
     def test_promote_info_logs(self):
         logging.basicConfig(level=logging.DEBUG)
