@@ -20,6 +20,7 @@ target-version = "py39"
 [tool.ruff.lint]
 ignore = [
     "SIM115", # open-file-with-context-handler
+    "UP015",  # redundant-open-modes  (why is more explicitness bad?)
 ]
 select = [
     "E",      # pycodestyle Error
@@ -39,6 +40,7 @@ select = [
     "RET",    # flake8-return
     "SIM",    # flake8-simplify
     "PL",     # Pylint
+    "UP",     # pyupgrade
     "RUF",    # Ruff-specific rules
 ]
 
