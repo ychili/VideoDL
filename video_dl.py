@@ -197,7 +197,7 @@ class Program:
         with o_file:
             options = load(o_file)
         if options is None:
-            self.logger.exception("unable to parse options file: %s", o_path)
+            self.logger.error("unable to parse options file: %s", o_path)
             return None
         if interpret:
             try:
