@@ -8,6 +8,10 @@ profile = "black"
 [tool.mypy]
 python_version = "3.9"
 
+[[tool.mypy.overrides]]
+module = "video_dl"
+disallow_untyped_defs = true
+
 [tool.pylint.main]
 py-version = "3.9"
 

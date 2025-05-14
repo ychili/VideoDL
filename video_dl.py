@@ -20,9 +20,12 @@ import time
 import types
 from collections.abc import Callable, Iterator, Mapping, MutableMapping
 from pathlib import Path
-from typing import Any, NamedTuple, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, TypeVar
 
 import yt_dlp  # type: ignore
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsRead
 
 try:
     import yaml as _yaml
@@ -135,7 +138,7 @@ class Job:
 class ProgramLogger(logging.LoggerAdapter):
     """A LoggerAdapter that prepends the section name to the log message"""
 
-    def process(self, msg, kwargs):
+    def process(self, msg: Any, kwargs: MM) -> tuple[str, MM]:
         return f"{self.extra['section']}: {msg}", kwargs
 
 
@@ -208,14 +211,14 @@ class Program:
         return options
 
     @staticmethod
-    def _load_json(o_file) -> Any | None:
+    def _load_json(o_file: SupportsRead[str]) -> Any | None:
         try:
             return json.load(o_file)
         except json.JSONDecodeError:
             return None
 
     @staticmethod
-    def _load_yaml(o_file) -> Any | None:
+    def _load_yaml(o_file: SupportsRead[str]) -> Any | None:
         loader = getattr(_yaml, "CLoader", _yaml.Loader)
         try:
             return _yaml.load(o_file, Loader=loader)
@@ -475,7 +478,7 @@ def promote_info_logs(std_debug: Callable[..., None]) -> Callable[..., None]:
     """
 
     @functools.wraps(std_debug)
-    def wrapper(msg: object, *args: object, **kwargs: Any):
+    def wrapper(msg: object, *args: object, **kwargs: Any) -> None:
         # Assuming msg is a str
         try:
             debug = msg.startswith("[debug] ")  # type: ignore
