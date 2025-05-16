@@ -176,8 +176,26 @@ class Program:
 
     def read_options(
         self, key: str = "OptionsFile", interpret: bool = False
-    ) -> dict | collections.ChainMap | None:
+    ) -> dict | MutableMapping | collections.ChainMap | None:
         o_path = self.map.get(key)
+        options = self._load_options(o_path)
+        if options is None:
+            self.logger.error("unable to parse options file: %s", o_path)
+            return None
+        if not isinstance(options, MutableMapping):
+            self.logger.error(
+                "top-level value in options file is not an object (dict): %s", o_path
+            )
+            return None
+        if interpret:
+            try:
+                return self.interpret_options(options)
+            except yt_dlp.optparse.OptParseError:
+                self.logger.exception("error parsing options array")
+                return None
+        return options
+
+    def _load_options(self, o_path: str | None) -> dict | Any | None:
         if not o_path:
             return {}
         load = self._load_json
@@ -198,17 +216,7 @@ class Program:
             self.logger.exception("can't read options file: %s", err)
             return None
         with o_file:
-            options = load(o_file)
-        if options is None:
-            self.logger.error("unable to parse options file: %s", o_path)
-            return None
-        if interpret:
-            try:
-                return self.interpret_options(options)
-            except yt_dlp.optparse.OptParseError:
-                self.logger.exception("error parsing options array")
-                return None
-        return options
+            return load(o_file)
 
     @staticmethod
     def _load_json(o_file: SupportsRead[str]) -> Any | None:
