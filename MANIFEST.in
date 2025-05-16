@@ -3,4 +3,5 @@ graft examples
 include scripts/*.py
 
 include Makefile
+include tox.ini
 include data/MANUAL.txt
