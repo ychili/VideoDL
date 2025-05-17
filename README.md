@@ -81,7 +81,7 @@ and `VideoDL.conf.5` for the configuration file format.
 
 # Copyright
 
-Copyright 2022-2024 Dylan Maltby
+Copyright 2022-2025 Dylan Maltby
 
 This program is free software: you can redistribute it and/or modify it
 under the terms of the GNU General Public License as published by the
