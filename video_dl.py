@@ -34,7 +34,7 @@ except ImportError:
 else:
     _HAS_YAML = True
 
-__version__ = "1.0.2"
+__version__ = "1.1.0"
 PROG = "VideoDL"
 CONSOLE_FMT = "%(module)s: %(levelname)s: %(message)s"
 LEGACY_LOG_FMT = "%(asctime)s *** %(levelname)s %(message)s"
