@@ -3,6 +3,7 @@ import collections.abc
 import configparser
 import contextlib
 import datetime
+import functools
 import logging
 import os.path
 import pathlib
@@ -184,6 +185,26 @@ class TestProgram(unittest.TestCase):
         options[opt_key].append("--bad-option")
         with self.assertRaises(video_dl.yt_dlp.optparse.OptParseError):
             options = self.prog.interpret_options(options)
+
+    def test_get_date_range(self):
+        start_key, end_key = "DateStart", "DateEnd"
+        get = functools.partial(self.prog.get_date_range, start_key, end_key)
+        # Default case
+        self.assertIsInstance(get(), video_dl.MyDateRange)
+        # Single argument
+        year = 4321
+        self.prog.map[end_key] = f"{year}0123"
+        self.assertEqual(get().end.year, year)
+        # Two arguments
+        self.prog.map[start_key] = "yesterday"
+        bounded = get()
+        self.assertEqual(bounded.end.year, year)
+        self.assertLess(bounded.start, bounded.start.today())
+        # Invalid value
+        self.prog.map[end_key] = "spam"
+        with self.assertLogs(level=logging.WARNING) as recording:
+            self.assertIsNone(get())
+        self.assertTrue(any("spam" in msg for msg in recording.output))
 
 
 class TestDuration(unittest.TestCase):

@@ -255,11 +255,20 @@ class Program:
 
     def get_date_range(
         self, start_key: str = "DateStart", end_key: str = "DateEnd"
-    ) -> MyDateRange:
+    ) -> MyDateRange | None:
         """For values of config keys, convert to single DateRange object."""
         start_val = self.map.get(start_key)
         end_val = self.map.get(end_key)
-        return MyDateRange(start=start_val, end=end_val)
+        try:
+            return MyDateRange(start=start_val, end=end_val)
+        except ValueError as err:
+            self.logger.warning(
+                "one or both of %s and %s have invalid values: %s",
+                start_key,
+                end_key,
+                err,
+            )
+            return None
 
     def get_output_logger(
         self, key: str = "Log", console_level: int = logging.INFO
@@ -434,12 +443,15 @@ def parse_config(
         if ydl_opts is None:
             logger.warning("unable to read options file, skipping %s", job)
             continue
+        ydl_opts["daterange"] = prog.get_date_range()
+        if ydl_opts["daterange"] is None:
+            logger.warning("error getting date range, skipping %s", job)
+            continue
 
         prog.shuffle_source(url_list)
 
         ydl_opts["download_archive"] = prog.map.get("DownloadArchive")
         ydl_opts["logger"] = prog.get_output_logger(console_level=console_level)
-        ydl_opts["daterange"] = prog.get_date_range()
         ydl_opts["outtmpl"] = str(
             subdir / ydl_opts.get("outtmpl", yt_dlp.utils.DEFAULT_OUTTMPL["default"])
         )
