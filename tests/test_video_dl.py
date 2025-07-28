@@ -1,9 +1,12 @@
 import collections
 import collections.abc
 import configparser
+import contextlib
 import datetime
 import logging
 import os.path
+import pathlib
+import tempfile
 import unittest
 
 import video_dl
@@ -21,6 +24,14 @@ _EXPECTED_OPTIONS_FROM_EXAMPLE_FILE = {
 }
 
 
+@contextlib.contextmanager
+def _tmp_file(data):
+    with tempfile.NamedTemporaryFile() as tmp_f:
+        tmp_f.write(data)
+        tmp_f.seek(0)
+        yield pathlib.Path(tmp_f.name)
+
+
 class TestProgram(unittest.TestCase):
     def setUp(self):
         config = configparser.ConfigParser(
@@ -29,6 +40,25 @@ class TestProgram(unittest.TestCase):
         self.test_section = "SectionName"
         config.read_dict({self.test_section: {}})
         self.prog = video_dl.Program(config, self.test_section)
+
+    def test_read_source(self):
+        key = "Source"
+        # Key missing
+        with self.assertLogs(level="ERROR"):
+            self.assertIsNone(self.prog.read_source(key))
+        # File missing
+        self.prog.map[key] = "missing-file"
+        with self.assertLogs(level="ERROR") as recording:
+            self.assertIsNone(self.prog.read_source(key))
+            self.assertTrue(any("missing-file" in msg for msg in recording.output))
+        # Successful case
+        # Keep the inputs simple. Test our code, not library code.
+        urls = ["https://www.example.com/v"]
+        source_text = "\n".join(urls)
+        with _tmp_file(f"{source_text}\n".encode()) as source_path:
+            self.prog.map[key] = str(source_path)
+            urls_from_file = self.prog.read_source(key)
+            self.assertEqual(urls, urls_from_file)
 
     def test_parse_interval(self):
         key = "TestInterval"
