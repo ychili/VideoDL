@@ -128,6 +128,27 @@ class TestProgram(unittest.TestCase):
             )
             self.assertTrue(any(test))
 
+    def test_read_options(self):
+        key = "OptionsFile"
+        # Missing key
+        self.assertEqual(self.prog.read_options(key), {})
+        # Missing file
+        filename = "missing-file"
+        self.prog.map[key] = filename
+        with self.assertLogs(level=logging.ERROR) as recording:
+            self.assertIsNone(self.prog.read_options(key))
+        self.assertTrue(any(filename in msg for msg in recording.output))
+        # Invalid inputs
+        data = [
+            b"{",  # Invalid JSON
+            b"[]",  # Must be a JSON object, not an array
+        ]
+        for json_data in data:
+            with self.subTest(json_data=json_data), _tmp_file(json_data) as path:
+                self.prog.map[key] = str(path)
+                with self.assertLogs(level=logging.ERROR):
+                    self.assertIsNone(self.prog.read_options(key))
+
     def test_example_options_file(self):
         path = os.path.join(os.path.dirname(__file__), "../examples/options.json")
         key = "OptionsFile"
