@@ -206,6 +206,44 @@ class TestProgram(unittest.TestCase):
             self.assertIsNone(get())
         self.assertTrue(any("spam" in msg for msg in recording.output))
 
+    def test_get_output_logger(self):
+        key = "Log"
+        console_level = -1
+        func = functools.partial(
+            self.prog.get_output_logger, key=key, console_level=console_level
+        )
+        # Default case, no FileHandler
+        logger = func()
+        self.assertEqual(logger.name, self.prog.section)
+        self.assertEqual(logger.level, logging.DEBUG)
+        self.assertEqual(len(logger.handlers), 1)
+        self.assertEqual(logger.handlers[0].level, console_level)
+        # With file logging
+        self.prog.map[key] = os.devnull
+        logger = func()
+        # A new StreamHandler was added as well,
+        # so there are three handlers now.
+        self.assertEqual(len(logger.handlers), 3)
+        file_hdlr = next(
+            hdlr for hdlr in logger.handlers if isinstance(hdlr, logging.FileHandler)
+        )
+        self.assertEqual(file_hdlr.level, logging.DEBUG)
+        self.assertEqual(file_hdlr.mode, "w")
+        self.assertEqual(file_hdlr.stream.name, os.devnull)
+
+    def test_get_output_logger_formatter(self):
+        fmt_key, datefmt_key = "LogFmt", "LogDateFmt"
+        get = functools.partial(
+            self.prog.get_output_logger_formatter, fmt_key, datefmt_key
+        )
+        # Default case
+        fmtr = get()
+        self.assertIsNone(fmtr.datefmt)
+        # Custom date format
+        self.prog.map[datefmt_key] = "spam"
+        fmtr = get()
+        self.assertEqual(fmtr.datefmt, "spam")
+
 
 class TestDuration(unittest.TestCase):
     def test_parse_duration(self):
