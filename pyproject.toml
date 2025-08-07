@@ -13,9 +13,14 @@ files = [
     "tests",
     "scripts",
 ]
+warn_unused_configs = true
+warn_redundant_casts = true
+strict_equality = true
 
 [[tool.mypy.overrides]]
 module = "video_dl"
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
 disallow_untyped_defs = true
 
 [tool.pylint.main]
