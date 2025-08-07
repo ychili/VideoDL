@@ -6,6 +6,7 @@ __pycache__/
 *.egg-info/
 
 # Setuptools files
+build/
 dist/
 
 # Generated files
