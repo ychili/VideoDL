@@ -154,7 +154,9 @@ class TestProgram(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), "../examples/options.json")
         key = "OptionsFile"
         self.prog.map[key] = path
-        with self.assertLogs(level=logging.WARNING) as recording:
+        with self.assertLogs(
+            self.prog.logger.logger, level=logging.WARNING
+        ) as recording:
             # We want to assert that there are no warnings, so we are adding a
             # dummy warning, and then we will assert it is the only warning.
             self.prog.logger.warning("Dummy warning")
