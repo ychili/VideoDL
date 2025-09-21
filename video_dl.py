@@ -18,7 +18,7 @@ import sys
 import threading
 import time
 import types
-from collections.abc import Callable, Iterator, Mapping, MutableMapping
+from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, TypeVar
 
@@ -380,8 +380,8 @@ class Args(types.SimpleNamespace):
     sleep: Duration | None
 
 
-def main() -> None:
-    args = parse_cla()
+def main(argv: Sequence[str] | None = None) -> None:
+    args = parse_cla(argv)
     init_logging(args.log_level)
     try:
         config = search_configs(args.config)
@@ -605,7 +605,7 @@ def parse_log_level(string: str) -> int:
         return logging.DEBUG
 
 
-def parse_cla() -> Args:
+def parse_cla(argv: Sequence[str] | None = None) -> Args:
     """Parse command-line arguments."""
     parser = argparse.ArgumentParser()
     parser.add_argument(
@@ -646,7 +646,7 @@ def parse_cla() -> Args:
         metavar="SEC",
         help="sleep for a random duration between 0 and %(metavar)s seconds before starting",
     )
-    return parser.parse_args(namespace=Args())
+    return parser.parse_args(argv, namespace=Args())
 
 
 if __name__ == "__main__":
