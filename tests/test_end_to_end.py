@@ -7,8 +7,9 @@ import pytest
 import video_dl
 
 
-@pytest.fixture
-def mock_ydl(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+@pytest.fixture(name="mock_ydl")
+def mock_ydl_fixture(monkeypatch: pytest.MonkeyPatch) -> unittest.mock.MagicMock:
+    """Mock the `yt_dlp.YoutubeDL` context manager."""
     mock_context = unittest.mock.MagicMock()
     mock_context.download = unittest.mock.MagicMock(return_value=0)
 
