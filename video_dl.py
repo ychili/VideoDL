@@ -25,7 +25,7 @@ from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, TypeVar
 import yt_dlp  # type: ignore
 
 if TYPE_CHECKING:
-    from _typeshed import SupportsRead
+    from _typeshed import ConvertibleToFloat, SupportsRead
 
 try:
     import yaml as _yaml
@@ -85,7 +85,9 @@ class Job:
         self,
         urls: list[str],
         options: MutableMapping[str, Any] | None = None,
-        sleep_interval: TimeInterval | tuple[float, float] | None = None,
+        sleep_interval: (
+            TimeInterval | tuple[ConvertibleToFloat, ConvertibleToFloat] | None
+        ) = None,
         logger: logging.Logger | logging.LoggerAdapter | None = None,
     ) -> None:
         self.urls = urls
