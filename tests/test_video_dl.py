@@ -154,16 +154,8 @@ class TestProgram(unittest.TestCase):
         path = os.path.join(os.path.dirname(__file__), "../examples/options.json")
         key = "OptionsFile"
         self.prog.map[key] = path
-        with self.assertLogs(
-            self.prog.logger.logger, level=logging.WARNING
-        ) as recording:
-            # We want to assert that there are no warnings, so we are adding a
-            # dummy warning, and then we will assert it is the only warning.
-            self.prog.logger.warning("Dummy warning")
+        with self.assertNoLogs(level=logging.WARNING):
             options = self.prog.read_options(key=key, interpret=True)
-        self.assertEqual(
-            recording.output, ["WARNING:VideoDL:SectionName: Dummy warning"]
-        )
         self.assertTrue(options)
         self.assertIsInstance(options, collections.abc.MutableMapping)
         # Check a subset of expected options.
