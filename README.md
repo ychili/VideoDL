@@ -48,7 +48,7 @@ That script eventually evolved into this script.
 
 Run-time dependencies:
 
-  - Python 3.9+
+  - Python 3.10+
   - [yt-dlp][1]
   - [PyYAML][2] *(Optional)* - if this is installed, you can write your
     options file in YAML format as well as standard JSON.

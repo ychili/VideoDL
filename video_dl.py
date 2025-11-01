@@ -141,7 +141,8 @@ class ProgramLogger(logging.LoggerAdapter):
     """A LoggerAdapter that prepends the section name to the log message"""
 
     def process(self, msg: Any, kwargs: MM) -> tuple[str, MM]:
-        return f"{self.extra['section']}: {msg}", kwargs
+        section = self.extra["section"]  # type: ignore[index]
+        return f"{section}: {msg}", kwargs
 
 
 class Program:
