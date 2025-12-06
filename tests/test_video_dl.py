@@ -9,6 +9,7 @@ import os.path
 import pathlib
 import tempfile
 import unittest
+import unittest.mock
 
 import video_dl
 
@@ -225,6 +226,25 @@ class TestProgram(unittest.TestCase):
         self.assertEqual(file_hdlr.mode, "w")
         self.assertEqual(file_hdlr.stream.name, os.devnull)
 
+    def test_promote_info_logs(self):
+        sentinel = object()
+        with unittest.mock.patch.object(self.prog, "logger"):
+            # pylint: disable=no-member
+            # Turn off "Method has no member" messages to make assertions on
+            # our mocks.
+            std_debug = self.prog.logger.debug
+            wrapped_debug_method = self.prog.promote_info_logs(std_debug)
+            info_msg = "[info] Promoted to info"
+            wrapped_debug_method(info_msg, sentinel)
+            self.prog.logger.info.assert_called_once_with(info_msg, sentinel)
+            std_debug.assert_not_called()
+            debug_msg = "[debug] Matches and remains at debug"
+            wrapped_debug_method(debug_msg, sentinel)
+            std_debug.assert_called_once_with(debug_msg, sentinel)
+            warning_msg = "[warning] Other prefixes not affected, promoted to info"
+            wrapped_debug_method(warning_msg, sentinel)
+            self.prog.logger.info.assert_called_with(warning_msg, sentinel)
+
     def test_get_output_logger_formatter(self):
         fmt_key, datefmt_key = "LogFmt", "LogDateFmt"
         get = functools.partial(
@@ -271,17 +291,6 @@ class TestFunctions(unittest.TestCase):
         self.assertEqual(video_dl.parse_log_level("-1"), -1)
         with self.assertRaises(AttributeError):
             video_dl.parse_log_level(20)  # type: ignore
-
-    def test_promote_info_logs(self):
-        logging.basicConfig(level=logging.DEBUG)
-        logger = logging.getLogger()
-        logger.debug = video_dl.promote_info_logs(logger.debug)
-        with self.assertLogs(level=logging.INFO):
-            logger.debug("[info] Promoted to info")
-        with self.assertLogs(level=logging.DEBUG):
-            logger.debug("[debug] Matches and remains at debug")
-        with self.assertLogs(level=logging.WARNING):
-            logger.warning("[warning] Warnings not affected")
 
 
 class TestMyDateRange(unittest.TestCase):

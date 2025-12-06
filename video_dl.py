@@ -283,7 +283,7 @@ class Program:
         if self.distinguish_debug():
             # Avoid mypy error "can't assign to a method". This is a limitation
             # of mypy (issue #708).
-            logger.debug = promote_info_logs(logger.debug)  # type: ignore
+            logger.debug = self.promote_info_logs(logger.debug)  # type: ignore[method-assign]
         console_hdlr = logging.StreamHandler()
         console_hdlr.setLevel(console_level)
         console_hdlr.setFormatter(logging.Formatter(CONSOLE_FMT))
@@ -297,6 +297,17 @@ class Program:
 
     def distinguish_debug(self, key: str = "DistinguishDebug") -> bool:
         return self.get_boolean(key, False)
+
+    def promote_info_logs(self, std_debug: Callable[..., None]) -> Callable[..., None]:
+        """Return a debug method that distinguishes by '[debug] ' prefix."""
+
+        @functools.wraps(std_debug)
+        def wrapper(msg: object, *args: object, **kwargs: Any) -> None:
+            if str(msg).startswith("[debug] "):
+                return std_debug(msg, *args, **kwargs)
+            return self.logger.info(msg, *args, **kwargs)
+
+        return wrapper
 
     def get_output_logger_formatter(
         self, fmt_key: str = "LogFmt", datefmt_key: str = "LogDateFmt"
@@ -492,26 +503,6 @@ def cli_to_api(args: list[str]) -> dict:
             if pp not in default_opts["postprocessors"]
         ]
     return diff
-
-
-def promote_info_logs(std_debug: Callable[..., None]) -> Callable[..., None]:
-    """
-    Return a logging.Logger.debug method that distinguishes debug by the msg
-    prefix '[debug] '.
-    """
-
-    @functools.wraps(std_debug)
-    def wrapper(msg: object, *args: object, **kwargs: Any) -> None:
-        # Assuming msg is a str
-        try:
-            debug = msg.startswith("[debug] ")  # type: ignore
-        except AttributeError:
-            debug = False
-        if debug:
-            return std_debug(msg, *args, **kwargs)
-        return std_debug.__self__.info(msg, *args, **kwargs)  # type: ignore
-
-    return wrapper
 
 
 def search_configs(config_path: str | None = None) -> Config:
