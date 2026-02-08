@@ -63,35 +63,38 @@ class TestProgram(unittest.TestCase):
             self.assertEqual(urls, urls_from_file)
 
     def test_parse_interval(self):
+        def time_interval(lower=0.0, upper=0.0):
+            return video_dl.TimeInterval(
+                lower=video_dl.Duration(lower), upper=video_dl.Duration(upper)
+            )
+
         key = "TestInterval"
         # No value
-        self.assertEqual(self.prog.parse_interval(key), video_dl.TimeInterval())
+        self.assertEqual(self.prog.parse_interval(key), time_interval())
         # Single valid value
         self.prog.map[key] = "2"
-        self.assertEqual(
-            self.prog.parse_interval(key), video_dl.TimeInterval(lower=2.0)
-        )
+        self.assertEqual(self.prog.parse_interval(key), time_interval(lower=2.0))
         # Single invalid value
         self.prog.map[key] = "-1"
         with self.assertLogs(level="WARNING"):
             interval = self.prog.parse_interval(key)
-        self.assertEqual(interval, video_dl.TimeInterval())
+        self.assertEqual(interval, time_interval())
         # Two valid values
         self.prog.map[key] = "3, 5"
-        self.assertEqual(self.prog.parse_interval(key), video_dl.TimeInterval(3.0, 5.0))
+        self.assertEqual(self.prog.parse_interval(key), time_interval(3.0, 5.0))
         # All values after first two are ignored
         self.prog.map[key] = "6, 7, 15, 0"
-        self.assertEqual(self.prog.parse_interval(key), video_dl.TimeInterval(6.0, 7.0))
+        self.assertEqual(self.prog.parse_interval(key), time_interval(6.0, 7.0))
         # One valid, one invalid
         self.prog.map[key] = "6, 8a"
         with self.assertLogs(level="WARNING"):
             interval = self.prog.parse_interval(key)
-        self.assertEqual(interval, video_dl.TimeInterval())
+        self.assertEqual(interval, time_interval())
         # No dangling commas
         self.prog.map[key] = " 3,"
         with self.assertLogs(level="WARNING"):
             interval = self.prog.parse_interval(key)
-        self.assertEqual(interval, video_dl.TimeInterval())
+        self.assertEqual(interval, time_interval())
 
     def test_parse_log_mode(self):
         key = "TestLogMode"
