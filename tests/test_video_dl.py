@@ -197,7 +197,7 @@ class TestProgram(unittest.TestCase):
         self.prog.map[start_key] = "yesterday"
         bounded = get()
         self.assertEqual(bounded.end.year, year)
-        self.assertLess(bounded.start, bounded.start.today())
+        self.assertLess(bounded.start, TestMyDateRange.today())
         # Invalid value
         self.prog.map[end_key] = "spam"
         with self.assertLogs(level=logging.WARNING) as recording:
@@ -302,6 +302,8 @@ class TestMyDateRange(unittest.TestCase):
     @staticmethod
     def _today():
         return datetime.datetime.now(tz=datetime.timezone.utc).date()
+
+    today = _today
 
     def test_daterange(self):
         century_21 = video_dl.MyDateRange("20000101", "21000101")
