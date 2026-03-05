@@ -140,8 +140,10 @@ class Job:
 class ProgramLogger(logging.LoggerAdapter):
     """A LoggerAdapter that prepends the section name to the log message"""
 
+    extra: dict[str, Any]
+
     def process(self, msg: Any, kwargs: MM) -> tuple[str, MM]:
-        section = self.extra["section"]  # type: ignore[index]
+        section = self.extra["section"]
         return f"{section}: {msg}", kwargs
 
 
