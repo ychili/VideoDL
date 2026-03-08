@@ -7,6 +7,7 @@ import functools
 import logging
 import os.path
 import pathlib
+import sys
 import tempfile
 import unittest
 import unittest.mock
@@ -26,15 +27,25 @@ _EXPECTED_OPTIONS_FROM_EXAMPLE_FILE = {
 }
 
 
-@contextlib.contextmanager
-def _tmp_file(data):
-    with tempfile.NamedTemporaryFile() as tmp_f:
-        tmp_f.write(data)
-        tmp_f.seek(0)
-        yield pathlib.Path(tmp_f.name)
+class _VideoDLTestCase(unittest.TestCase):
+    @contextlib.contextmanager
+    def _tmp_file(self, data=b""):
+        kwds = {}
+        # Prefer not to delete_on_close if available.
+        # Instead the temp file will be deleted
+        # when the context manager exits.
+        if sys.version_info >= (3, 12):
+            kwds["delete_on_close"] = False
+        elif sys.platform.startswith("win"):
+            # And it won't work on Windows without it.
+            self.skipTest("need a feature from Python 3.12")
+        with tempfile.NamedTemporaryFile(**kwds) as tmp_f:
+            tmp_f.write(data)
+            tmp_f.seek(0)
+            yield pathlib.Path(tmp_f.name)
 
 
-class TestProgram(unittest.TestCase):
+class TestProgram(_VideoDLTestCase):
     def setUp(self):
         config = configparser.ConfigParser(
             interpolation=configparser.ExtendedInterpolation()
@@ -57,7 +68,7 @@ class TestProgram(unittest.TestCase):
         # Keep the inputs simple. Test our code, not library code.
         urls = ["https://www.example.com/v"]
         source_text = "\n".join(urls)
-        with _tmp_file(f"{source_text}\n".encode()) as source_path:
+        with self._tmp_file(f"{source_text}\n".encode()) as source_path:
             self.prog.map[key] = str(source_path)
             urls_from_file = self.prog.read_source(key)
             self.assertEqual(urls, urls_from_file)
@@ -149,7 +160,7 @@ class TestProgram(unittest.TestCase):
             b"[]",  # Must be a JSON object, not an array
         ]
         for json_data in data:
-            with self.subTest(json_data=json_data), _tmp_file(json_data) as path:
+            with self.subTest(json_data=json_data), self._tmp_file(json_data) as path:
                 self.prog.map[key] = str(path)
                 with self.assertLogs(level=logging.ERROR):
                     self.assertIsNone(self.prog.read_options(key))
@@ -277,7 +288,7 @@ class TestProgram(unittest.TestCase):
         self.assertEqual(fmtr.datefmt, "spam")
 
 
-class TestDuration(unittest.TestCase):
+class TestDuration(_VideoDLTestCase):
     def test_parse_duration(self):
         dur = video_dl.Duration.parse_string
         self.assertEqual(dur("3.14"), 3.14)
@@ -299,7 +310,7 @@ class TestDuration(unittest.TestCase):
         self.assertEqual(video_dl.Duration(1000).format(), "16m40s")
 
 
-class TestFunctions(unittest.TestCase):
+class TestFunctions(_VideoDLTestCase):
     def test_parse_log_level(self):
         default = 10  # = logging.DEBUG
         self.assertEqual(video_dl.parse_log_level("DEBUG"), 10)
@@ -311,7 +322,7 @@ class TestFunctions(unittest.TestCase):
             video_dl.parse_log_level(20)  # type: ignore
 
 
-class TestMyDateRange(unittest.TestCase):
+class TestMyDateRange(_VideoDLTestCase):
     """Make sure `MyDateRange` inherits the features we expect."""
 
     @staticmethod
@@ -340,7 +351,7 @@ class TestMyDateRange(unittest.TestCase):
         self.assertIn(datetime.date(2005, 4, 3), old)
 
 
-class TestConfigParse(unittest.TestCase):
+class TestConfigParse(_VideoDLTestCase):
     def setUp(self):
         self.config = configparser.ConfigParser()
 
