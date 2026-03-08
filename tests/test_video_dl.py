@@ -218,7 +218,19 @@ class TestProgram(unittest.TestCase):
         self.assertEqual(logger.handlers[0].level, console_level)
         # With file logging
         self.prog.map[key] = os.devnull
-        logger = func()
+        delay_open = os.name != "posix"
+        # On POSIX we have /dev/null that we can refer to and actually open.
+        # FileHandler needs an actual path to open. Windows 'NUL' won't work.
+        # As a workaround, pass delay=True.
+        if delay_open:
+            patch = unittest.mock.patch(
+                "logging.FileHandler",
+                functools.partial(logging.FileHandler, delay=True),
+            )
+        else:
+            patch = contextlib.nullcontext()
+        with patch:
+            logger = func()
         # A new StreamHandler was added as well,
         # so there are three handlers now.
         self.assertEqual(len(logger.handlers), 3)
@@ -227,7 +239,10 @@ class TestProgram(unittest.TestCase):
         )
         self.assertEqual(file_hdlr.level, logging.DEBUG)
         self.assertEqual(file_hdlr.mode, "w")
-        self.assertEqual(file_hdlr.stream.name, os.devnull)
+        if delay_open:
+            self.assertIsNone(file_hdlr.stream)
+        else:
+            self.assertEqual(file_hdlr.stream.name, os.devnull)
 
     def test_promote_info_logs(self):
         sentinel = object()
