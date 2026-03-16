@@ -293,8 +293,8 @@ class TestDuration(_VideoDLTestCase):
         dur = video_dl.Duration.parse_string
         self.assertEqual(dur("3.14"), 3.14)
         self.assertEqual(dur("3600"), 3600)
-        self.assertRaises(ValueError, dur, "-1")
-        self.assertRaises(ValueError, dur, "inf")
+        self.assertRaisesRegex(ValueError, "-1", dur, "-1")
+        self.assertRaisesRegex(ValueError, "inf", dur, "inf")
 
     def test_random_duration(self):
         for _ in range(4):
