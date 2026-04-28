@@ -23,7 +23,7 @@ from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequenc
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, TypeVar
 
-import yt_dlp  # type: ignore
+import yt_dlp
 
 if TYPE_CHECKING:
     from _typeshed import ConvertibleToFloat, SupportsRead
@@ -43,6 +43,7 @@ LEGACY_LOG_FMT = "%(asctime)s *** %(levelname)s %(message)s"
 ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
 
 MM = TypeVar("MM", bound="MutableMapping")
+_Params = Mapping[str, Any]
 
 
 class Duration(float):
@@ -112,7 +113,7 @@ class Job:
 
     def download(self) -> None:
         self.logger.debug("video queue: %s", self.urls)
-        with yt_dlp.YoutubeDL(self.options) as ydl:
+        with yt_dlp.YoutubeDL(self.options) as ydl:  # type: ignore[arg-type]
             self.logger.info("starting download")
             self.logger.debug(ydl.params)
             try:
@@ -484,7 +485,7 @@ def die(status: int, *msg: object) -> NoReturn:
     sys.exit(status)
 
 
-def cli_to_api(args: list[str]) -> dict:
+def cli_to_api(args: list[str]) -> dict[str, Any]:
     """Return a dictionary of options parsed from *args*.
 
     Only options with values different from the defaults will be included.
@@ -495,7 +496,7 @@ def cli_to_api(args: list[str]) -> dict:
     {'concurrent_fragment_downloads': 2}
     """
 
-    def parse_options(args: list[str]) -> dict:
+    def parse_options(args: list[str]) -> _Params:
         return yt_dlp.parse_options(args).ydl_opts
 
     default_opts = parse_options([])

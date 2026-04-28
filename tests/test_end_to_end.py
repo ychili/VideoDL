@@ -3,7 +3,7 @@ import unittest.mock
 from pathlib import Path
 
 import pytest
-import yt_dlp  # type: ignore
+import yt_dlp
 
 import video_dl
 
@@ -13,7 +13,7 @@ import video_dl
     params=[
         pytest.param({"return_value": 0}, id="successful"),
         pytest.param(
-            {"side_effect": yt_dlp.DownloadError("handle this error")},
+            {"side_effect": yt_dlp.utils.DownloadError("handle this error")},
             id="DownloadError",
         ),
     ],
