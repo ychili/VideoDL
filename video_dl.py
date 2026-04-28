@@ -12,6 +12,7 @@ import fnmatch
 import functools
 import json
 import logging
+import optparse  # pylint: disable=deprecated-module
 import os
 import random
 import sys
@@ -197,7 +198,7 @@ class Program:
         if interpret:
             try:
                 return self.interpret_options(options)
-            except yt_dlp.optparse.OptParseError:
+            except optparse.OptParseError:
                 self.logger.exception("error parsing options array")
                 return None
         return options

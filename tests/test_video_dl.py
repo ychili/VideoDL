@@ -5,6 +5,7 @@ import contextlib
 import datetime
 import functools
 import logging
+import optparse  # pylint: disable=deprecated-module
 import os.path
 import pathlib
 import sys
@@ -192,7 +193,7 @@ class TestProgram(_VideoDLTestCase):
         # Original argv is unmodified
         self.assertListEqual(options[opt_key], ["--quiet", "-R", "8"])
         options[opt_key].append("--bad-option")
-        with self.assertRaises(video_dl.yt_dlp.optparse.OptParseError):
+        with self.assertRaises(optparse.OptParseError):
             options = self.prog.interpret_options(options)
 
     def test_get_date_range(self):
