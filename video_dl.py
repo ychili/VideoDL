@@ -114,7 +114,11 @@ class Job:
         with yt_dlp.YoutubeDL(self.options) as ydl:
             self.logger.info("starting download")
             self.logger.debug(ydl.params)
-            error_code = ydl.download(self.urls)
+            try:
+                error_code = ydl.download(self.urls)
+            except yt_dlp.utils.YoutubeDLError as err:
+                self.logger.error("download error: %s", err)
+                error_code = 1
         if error_code:
             self.logger.error("some videos failed to download")
 
