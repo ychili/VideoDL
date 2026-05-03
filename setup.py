@@ -2,6 +2,7 @@
 
 import os.path
 import warnings
+from collections.abc import Sequence
 
 from setuptools import setup
 
@@ -15,7 +16,7 @@ file_spec = [
     ("share/man/man1", ["data/video-dl.1.gz"]),
     ("share/man/man5", ["data/VideoDL.conf.5.gz"]),
 ]
-data_files = []
+data_files: list[tuple[str, Sequence[str]]] = []
 for dest_dir, files in file_spec:
     present_files = []
     for filename in files:
