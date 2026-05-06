@@ -26,6 +26,7 @@ import yt_dlp  # type: ignore
 
 if TYPE_CHECKING:
     from _typeshed import ConvertibleToFloat, SupportsRead
+    from typing_extensions import Self
 
 try:
     import yaml as _yaml
@@ -40,7 +41,6 @@ CONSOLE_FMT = "%(module)s: %(levelname)s: %(message)s"
 LEGACY_LOG_FMT = "%(asctime)s *** %(levelname)s %(message)s"
 ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
 
-D = TypeVar("D", bound="Duration")
 MM = TypeVar("MM", bound="MutableMapping")
 
 
@@ -48,7 +48,7 @@ class Duration(float):
     """A duration of seconds"""
 
     @classmethod
-    def parse_string(cls: type[D], seconds: str) -> D:
+    def parse_string(cls, seconds: str) -> Self:
         """Convert a string representing a decimal, positive, real number."""
         dur = float(seconds)
         if not 0.0 <= dur <= threading.TIMEOUT_MAX:
