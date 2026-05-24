@@ -17,11 +17,17 @@ warn_unused_configs = true
 warn_redundant_casts = true
 strict_equality = true
 enable_error_code = [
+    "deprecated",
     "mutable-override",
+    "possibly-undefined",
+    "redundant-self",
+    "truthy-bool",
+    "truthy-iterable",
 ]
 
 [[tool.mypy.overrides]]
 module = "video_dl"
+warn_unused_ignores = true
 disallow_untyped_calls = true
 disallow_incomplete_defs = true
 disallow_untyped_defs = true
