@@ -371,5 +371,19 @@ class TestConfigParse(_VideoDLTestCase):
         self.assertEqual(jobs, [])
 
 
+class TestProgramLogger(_VideoDLTestCase):
+    def setUp(self):
+        self.logger = logging.getLogger(__name__)
+
+    def test_nonstandard_use(self):
+        # These pass type check, but crash when used.
+        no_extra = video_dl.ProgramLogger(self.logger)
+        with self.assertRaises(TypeError), self.assertNoLogs():
+            no_extra.warning("This will crash.")
+        no_section_name = video_dl.ProgramLogger(self.logger, {"noitces": "section"})
+        with self.assertRaises(KeyError), self.assertNoLogs():
+            no_section_name.warning("This will crash, too.")
+
+
 if __name__ == "__main__":
     unittest.main()
