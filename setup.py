@@ -28,7 +28,7 @@ for dest_dir, files in file_spec:
                 stacklevel=2,
             )
     if present_files:
-        data_files.append((dest_dir, files))
+        data_files.append((dest_dir, present_files))
 
 
 setup(data_files=data_files)
