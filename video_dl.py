@@ -479,9 +479,9 @@ def parse_config(
         yield Job(url_list, ydl_opts, prog.parse_interval(), logger=prog.logger)
 
 
-def die(status: int, *msg: object) -> NoReturn:
+def die(status: int, msg: str, *args: object) -> NoReturn:
     logger = logging.getLogger(PROG)
-    logger.error(*msg)
+    logger.error(msg, *args)
     sys.exit(status)
 
 
