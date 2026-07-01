@@ -257,23 +257,19 @@ class TestProgram(_VideoDLTestCase):
             self.assertEqual(file_hdlr.stream.name, os.devnull)
 
     def test_promote_info_logs(self):
-        sentinel = object()
-        with unittest.mock.patch.object(self.prog, "logger"):
-            # pylint: disable=no-member
-            # Turn off "Method has no member" messages to make assertions on
-            # our mocks.
-            std_debug = self.prog.logger.debug
-            wrapped_debug_method = self.prog.promote_info_logs(std_debug)
-            info_msg = "[info] Promoted to info"
-            wrapped_debug_method(info_msg, sentinel)
-            self.prog.logger.info.assert_called_once_with(info_msg, sentinel)
-            std_debug.assert_not_called()
-            debug_msg = "[debug] Matches and remains at debug"
-            wrapped_debug_method(debug_msg, sentinel)
-            std_debug.assert_called_once_with(debug_msg, sentinel)
-            warning_msg = "[warning] Other prefixes not affected, promoted to info"
-            wrapped_debug_method(warning_msg, sentinel)
-            self.prog.logger.info.assert_called_with(warning_msg, sentinel)
+        self.prog.logger = unittest.mock.Mock()
+        std_debug = self.prog.logger.debug
+        wrapped_debug_method = self.prog.promote_info_logs(std_debug)
+        info_msg = "[info] Promoted to info"
+        wrapped_debug_method(info_msg, unittest.mock.sentinel)
+        self.prog.logger.info.assert_called_once_with(info_msg, unittest.mock.sentinel)
+        std_debug.assert_not_called()
+        debug_msg = "[debug] Matches and remains at debug"
+        wrapped_debug_method(debug_msg, unittest.mock.sentinel)
+        std_debug.assert_called_once_with(debug_msg, unittest.mock.sentinel)
+        warning_msg = "[warning] Other prefixes not affected, promoted to info"
+        wrapped_debug_method(warning_msg, unittest.mock.sentinel)
+        self.prog.logger.info.assert_called_with(warning_msg, unittest.mock.sentinel)
 
     def test_get_output_logger_formatter(self):
         fmt_key, datefmt_key = "LogFmt", "LogDateFmt"
