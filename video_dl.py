@@ -44,6 +44,7 @@ ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
 
 MM = TypeVar("MM", bound="MutableMapping")
 _Params = Mapping[str, Any]
+_ProgressDict = Mapping[str, Any]
 _Logger = logging.Logger | logging.LoggerAdapter[Any]
 
 
@@ -125,7 +126,7 @@ class Job:
         if error_code:
             self.logger.error("some videos failed to download")
 
-    def progress_hook(self, progress_info: Mapping) -> None:
+    def progress_hook(self, progress_info: _ProgressDict) -> None:
         if progress_info["status"] == "error":
             self.logger.error("error with job")
             self.logger.debug(progress_info["info_dict"])
