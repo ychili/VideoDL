@@ -21,13 +21,12 @@ import time
 import types
 from collections.abc import Callable, Iterator, Mapping, MutableMapping, Sequence
 from pathlib import Path
-from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Any, NamedTuple, NoReturn, Self, TypeVar
 
 import yt_dlp
 
 if TYPE_CHECKING:
     from _typeshed import ConvertibleToFloat, SupportsRead
-    from typing_extensions import Self
 
 try:
     import yaml as _yaml
