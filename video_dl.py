@@ -44,6 +44,7 @@ ISO_8601_SEC = "%Y-%m-%dT%H:%M:%S%z"
 
 MM = TypeVar("MM", bound="MutableMapping")
 _Params = Mapping[str, Any]
+_Logger = logging.Logger | logging.LoggerAdapter[Any]
 
 
 class Duration(float):
@@ -90,7 +91,7 @@ class Job:
         sleep_interval: (
             TimeInterval | tuple[ConvertibleToFloat, ConvertibleToFloat] | None
         ) = None,
-        logger: logging.Logger | logging.LoggerAdapter | None = None,
+        logger: _Logger | None = None,
     ) -> None:
         self.urls = urls
         self.options = options if options is not None else {}
@@ -143,7 +144,7 @@ class Job:
             )
 
 
-class ProgramLogger(logging.LoggerAdapter):
+class ProgramLogger(logging.LoggerAdapter[_Logger]):
     """A LoggerAdapter that prepends the section name to the log message"""
 
     def process(self, msg: Any, kwargs: MM) -> tuple[str, MM]:
