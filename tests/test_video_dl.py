@@ -324,7 +324,7 @@ class TestMyDateRange(_VideoDLTestCase):
 
     @staticmethod
     def _today():
-        return datetime.datetime.now(tz=datetime.timezone.utc).date()
+        return datetime.datetime.now(tz=datetime.UTC).date()
 
     today = _today
 
