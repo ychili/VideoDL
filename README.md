@@ -42,7 +42,7 @@ that may or may not be connected to the computer when the job was run.
 So a layer of error logging was added to the download script.
 That script eventually evolved into this script.
 
-[0]: https://github.com/TheFrenchGhosty/TheFrenchGhostys-Ultimate-YouTube-DL-Scripts-Collection/blob/master/docs/Scripts-Type.md
+[0]: https://github.com/TheFrenchGhosty/TheFrenchGhostys-Ultimate-YouTube-DL-Scripts-Collection/blob/3.1.1/docs/Scripts-Type.md
 
 # Requirements
 
