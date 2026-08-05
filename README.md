@@ -55,7 +55,7 @@ Run-time dependencies:
 
 To build the documentation:
 
-  - `make`, `sh`, `gzip`
+  - `gmake`, `sh`, `gzip`
   - [Pandoc][3]
 
 [1]: https://github.com/yt-dlp/yt-dlp/
