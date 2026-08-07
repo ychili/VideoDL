@@ -393,7 +393,7 @@ class Config(NamedTuple):
     files_read: list[str] | None = None
 
 
-# pylint: disable=too-few-public-methods
+# pylint: disable-next=too-few-public-methods
 class Args(types.SimpleNamespace):
     job_identifier: list[str]
     config: str | None
