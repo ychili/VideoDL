@@ -144,6 +144,7 @@ class Job:
             )
 
 
+# pylint: disable-next=too-few-public-methods
 class ProgramLogger(logging.LoggerAdapter[_Logger]):
     """A LoggerAdapter that prepends the section name to the log message"""
 
