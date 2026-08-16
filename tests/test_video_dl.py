@@ -2,7 +2,7 @@ import collections
 import collections.abc
 import configparser
 import contextlib
-import datetime
+import datetime as dt
 import functools
 import logging
 import optparse  # pylint: disable=deprecated-module
@@ -324,7 +324,7 @@ class TestMyDateRange(_VideoDLTestCase):
 
     @staticmethod
     def _today():
-        return datetime.datetime.now(tz=datetime.UTC).date()
+        return dt.datetime.now(tz=dt.UTC).date()
 
     today = _today
 
@@ -342,10 +342,10 @@ class TestMyDateRange(_VideoDLTestCase):
     def test_date_from_str(self):
         recent = video_dl.MyDateRange(start="today-6day")
         self.assertIn(self._today(), recent)
-        self.assertNotIn(datetime.date(2005, 4, 3), recent)
+        self.assertNotIn(dt.date(2005, 4, 3), recent)
         old = video_dl.MyDateRange(end="today-6days")
         self.assertNotIn(self._today(), old)
-        self.assertIn(datetime.date(2005, 4, 3), old)
+        self.assertIn(dt.date(2005, 4, 3), old)
 
 
 class TestConfigParse(_VideoDLTestCase):
