@@ -1,15 +1,21 @@
 #!/usr/bin/python3
 
-import os.path
+from __future__ import annotations
+
+import pathlib
 import warnings
 from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 from setuptools import setup
 
+if TYPE_CHECKING:
+    from _typeshed import StrPath
 
-def relate_to_root(rel_path: str) -> str:
-    here = os.path.abspath(os.path.dirname(__file__))
-    return os.path.join(here, rel_path)
+
+def relate_to_root(rel_path: StrPath) -> pathlib.Path:
+    here = pathlib.Path(__file__).parent.resolve()
+    return here / rel_path
 
 
 file_spec = [
@@ -20,7 +26,7 @@ data_files: list[tuple[str, Sequence[str]]] = []
 for dest_dir, files in file_spec:
     present_files = []
     for filename in files:
-        if os.path.exists(relate_to_root(filename)):
+        if relate_to_root(filename).exists():
             present_files.append(filename)
         else:
             warnings.warn(
