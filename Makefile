@@ -35,19 +35,20 @@ $(DATADIR)/VideoDL.conf.5: $(DOCSDIR)/VideoDL.conf.5.rst $(METADATA) $(DOCSDIR)/
 $(DATADIR)/version.yaml: video_dl.py | $(DATADIR)
 	$(PYTHON) scripts/get_version.py video_dl.py > $(DATADIR)/version.yaml
 
-$(DATADIR)/date.yaml: $(DOC_SRC) | $(DATADIR)
 # See if we are in a checked out repo. Then, print the committer date.
 # If not, fall back on the old method of getting the max mtime.
 # This should work whether the user is building from a checked out Git repo
 # or whether the user is building from a source distribution (tarball).
 ifeq ($(git_available),true)
-	# Set the manual date from the Git committer date.
-	printf 'date: %s\n' "$$(git log -1 --pretty=format:%cs $(DOC_SRC))" \
-		> $(DATADIR)/date.yaml
+  # Set the manual date from the Git committer date.
+  print_timestamp = git log -1 --pretty=format:%ct $(1)
 else
-	# Set the manual date from the files' mtime.
-	$(PYTHON) scripts/get_mtime.py $(DOC_SRC) > $(DATADIR)/date.yaml
+  # Set the manual date from the files' mtime.
+  print_timestamp = stat -c %Y $(1) 2>/dev/null || stat -f %m $(1)
 endif
+$(DATADIR)/date.yaml: $(DOC_SRC) | $(DATADIR)
+	$(call print_timestamp,$(DOC_SRC)) | $(PYTHON) scripts/convert_time.py \
+		> $(DATADIR)/date.yaml
 
 # Cross-platform, readable summary of the above
 $(DATADIR)/MANUAL.txt: $(DOCSDIR)/Manual.rst $(METADATA) | $(DATADIR)

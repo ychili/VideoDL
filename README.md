@@ -55,8 +55,9 @@ Run-time dependencies:
 
 To build the documentation:
 
-  - `gmake`, `sh`, `gzip`
+  - `gmake`, POSIX utilities, `gzip`
   - [Pandoc][3]
+  - Either `git` or `stat` for setting the date
 
 [1]: https://github.com/yt-dlp/yt-dlp/
 [2]: https://pyyaml.org/
