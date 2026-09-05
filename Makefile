@@ -58,7 +58,7 @@ $(DATADIR):
 	mkdir -p $(DATADIR)
 
 test:
-	$(PYTHON) -m doctest video_dl.py
+	$(PYTHON) -m doctest scripts/get_version.py video_dl.py
 	$(PYTHON) -m unittest tests/test*.py
 
 
