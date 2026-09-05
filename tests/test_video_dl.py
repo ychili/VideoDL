@@ -6,7 +6,7 @@ import datetime as dt
 import functools
 import logging
 import optparse  # pylint: disable=deprecated-module
-import os.path
+import os
 import pathlib
 import sys
 import tempfile
@@ -167,9 +167,9 @@ class TestProgram(_VideoDLTestCase):
                     self.assertIsNone(self.prog.read_options(key))
 
     def test_example_options_file(self):
-        path = os.path.join(os.path.dirname(__file__), "../examples/options.json")
+        path = pathlib.Path(__file__).parent.parent / "examples/options.json"
         key = "OptionsFile"
-        self.prog.map[key] = path
+        self.prog.map[key] = str(path)
         with self.assertNoLogs(level=logging.WARNING):
             options = self.prog.read_options(key=key, interpret=True)
         self.assertTrue(options)
